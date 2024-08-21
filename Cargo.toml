@@ -1,0 +1,15 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Alfatm <alfatm@gmail.com>"]
+categories = ["config"]
+edition = "2021"
+keywords = ["config", "env", "macro", "configuration", "environment"]
+license = "MPL-2.0"
+readme = "README.md"
+repository = "https://github.com/volkagames/envstruct.git"
+version = "1.0.0"
+description = ""
+documentation = ""

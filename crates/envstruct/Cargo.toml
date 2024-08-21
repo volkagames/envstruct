@@ -1,0 +1,55 @@
+[package]
+name = "envstruct"
+resolver = "2"
+authors = { workspace = true }
+categories = { workspace = true }
+description = { workspace = true }
+documentation = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+bytesize = { version = "1", optional = true }
+chrono = { version = "0.4", optional = true }
+derivative = "2.2"
+humantime = { version = "2", optional = true }
+regex = { version = "1", optional = true }
+thiserror = "1"
+url = { version = "2", optional = true }
+envstruct_derive = { path = "../envstruct_derive" }
+prettytable-rs = "0.10"
+skeptic = "0.13"
+paste = "1.0.15"
+serde_json = { version = "1", optional = true }
+serde = { version = "1", optional = true }
+
+[build-dependencies]
+skeptic = "0.13"
+
+[dev-dependencies]
+skeptic = "0.13"
+strum = { version = "0.26", features = ["derive"] }
+
+[features]
+default = [
+	"bytesize",
+	"chrono",
+	"humantime",
+	"regex",
+	"serde_json",
+	"url",
+	"env_uppercase",
+]
+bytesize = ["dep:bytesize"]
+chrono = ["dep:chrono"]
+humantime = ["dep:humantime"]
+regex = ["dep:regex"]
+serde_json = ["dep:serde_json", "dep:serde"]
+url = ["dep:url"]
+env_uppercase = []
+
+[[example]]
+name = "usage"
+path = "example/usage.rs"
