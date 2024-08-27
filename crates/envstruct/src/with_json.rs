@@ -9,7 +9,7 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
         Ok(serde_json::from_str(val)?)
     }
 
-    pub fn from_env_var(
+    pub fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<T, EnvStructError>
@@ -41,7 +41,7 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
         }
     }
 
-    pub fn inspect_env_entry(
+    pub fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {

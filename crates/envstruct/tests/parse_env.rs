@@ -599,18 +599,18 @@ fn test_with_override() {
 
     pub struct OverrideStringEnv;
     impl OverrideStringEnv {
-        fn from_env_var(
+        fn parse_from_env_var(
             _var_name: impl AsRef<str>,
             _default: Option<&str>,
         ) -> Result<String, EnvStructError> {
             Ok("override value".to_string())
         }
 
-        fn inspect_env_entry(
+        fn get_env_entries(
             prefix: impl AsRef<str>,
             default: Option<&str>,
         ) -> Result<Vec<EnvEntry>, EnvStructError> {
-            String::inspect_env_entry(prefix, default)
+            String::get_env_entries(prefix, default)
         }
     }
 

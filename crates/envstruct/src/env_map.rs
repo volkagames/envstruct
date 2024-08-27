@@ -28,7 +28,7 @@ where
     K: FromStr + std::hash::Hash + std::cmp::Eq,
     V: EnvParsePrimitive,
 {
-    fn from_env_var(
+    fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError>
@@ -48,14 +48,14 @@ where
                 Ok((
                     K::from_str(&key)
                         .map_err(|_| EnvStructError::InvalidKeyFormat(k.to_string()))?,
-                    V::from_env_var(k, default)?,
+                    V::parse_from_env_var(k, default)?,
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
         Ok(Self(map))
     }
 
-    fn inspect_env_entry(
+    fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {

@@ -6,6 +6,7 @@ use default_attr::*;
 use normalize_type_path::*;
 use proc_macro::TokenStream;
 use quote::*;
+use syn::spanned::Spanned;
 
 #[proc_macro_derive(EnvStruct, attributes(env))]
 pub fn derive(input: TokenStream) -> TokenStream {
@@ -117,8 +118,8 @@ impl ToTokens for EnvStructInputReceiver {
                         let var_default = field.default_expr();
                         let var_name_expr = field.var_name_expr();
 
-                        quote! {
-                            #field_name: #field_type::from_env_var(#var_name_expr, #var_default)?.into()
+                        quote_spanned! {field.ty.span() =>
+                            #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
                         }
                     })
                     .collect();
@@ -130,21 +131,22 @@ impl ToTokens for EnvStructInputReceiver {
                         let var_default = field.default_expr();
                         let var_name_expr = field.var_name_expr();
 
-                        quote! {
-                            #field_type::inspect_env_entry(#var_name_expr, #var_default)?
+                        quote_spanned! {field.ty.span() =>
+                            #field_type::get_env_entries(#var_name_expr, #var_default)?
                         }
                     })
                     .collect();
 
                 quote! {
+                    #[allow(clippy::useless_conversion)]
                     impl #imp ::envstruct::EnvParseNested for #ident #ty #where_clause {
-                        fn from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
+                        fn parse_from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
                             Ok(Self {
                                 #( #field_exprs, )*
                             })
                         }
 
-                        fn inspect_env_entry(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Vec<::envstruct::EnvEntry>, ::envstruct::EnvStructError> {
+                        fn get_env_entries(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Vec<::envstruct::EnvEntry>, ::envstruct::EnvStructError> {
                             Ok(vec![#( #inspect_exprs, )*].into_iter().flatten().collect())
                         }
                     }

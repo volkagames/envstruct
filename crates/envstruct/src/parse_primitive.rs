@@ -7,7 +7,7 @@ pub trait EnvParsePrimitive {
     where
         Self: Sized;
 
-    fn from_env_var(
+    fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError>
@@ -39,7 +39,7 @@ pub trait EnvParsePrimitive {
         }
     }
 
-    fn inspect_env_entry(
+    fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {
@@ -204,11 +204,11 @@ impl<T: EnvParsePrimitive> EnvParsePrimitive for Option<T> {
         Ok(Some(T::parse(val)?))
     }
 
-    fn from_env_var(
+    fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError> {
-        match T::from_env_var(var_name, default) {
+        match T::parse_from_env_var(var_name, default) {
             Ok(value) => Ok(Some(value)),
             Err(err) => match err {
                 EnvStructError::MissingEnvVar(_) => Ok(None),

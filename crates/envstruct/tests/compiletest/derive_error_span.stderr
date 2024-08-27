@@ -1,0 +1,27 @@
+error[E0599]: no function or associated item named `parse_from_env_var` found for struct `Foo` in the current scope
+ --> tests/compiletest/derive_error_span.rs:7:10
+  |
+3 | pub struct Foo {}
+  | -------------- function or associated item `parse_from_env_var` not found for this struct
+...
+7 |     foo: Foo,
+  |          ^^^ function or associated item not found in `Foo`
+  |
+  = help: items from traits can only be used if the trait is implemented and in scope
+  = note: the following traits define an item `parse_from_env_var`, perhaps you need to implement one of them:
+          candidate #1: `envstruct::EnvParseNested`
+          candidate #2: `envstruct::EnvParsePrimitive`
+
+error[E0599]: no function or associated item named `get_env_entries` found for struct `Foo` in the current scope
+ --> tests/compiletest/derive_error_span.rs:7:10
+  |
+3 | pub struct Foo {}
+  | -------------- function or associated item `get_env_entries` not found for this struct
+...
+7 |     foo: Foo,
+  |          ^^^ function or associated item not found in `Foo`
+  |
+  = help: items from traits can only be used if the trait is implemented and in scope
+  = note: the following traits define an item `get_env_entries`, perhaps you need to implement one of them:
+          candidate #1: `envstruct::EnvParseNested`
+          candidate #2: `envstruct::EnvParsePrimitive`

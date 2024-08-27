@@ -2,28 +2,35 @@ use crate::*;
 use paste::paste;
 
 pub trait EnvParseNested {
+    fn new() -> Result<Self, EnvStructError>
+    where
+        Self: Sized,
+    {
+        Self::parse_from_env_var("", None)
+    }
+
     fn with_prefix(prefix: impl AsRef<str>) -> Result<Self, EnvStructError>
     where
         Self: Sized,
     {
-        Self::from_env_var(prefix, None)
+        Self::parse_from_env_var(prefix, None)
     }
 
-    fn from_env_var(
+    fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError>
     where
         Self: Sized;
 
-    fn inspect_env_entry(
+    fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError>;
 }
 
 impl<T: EnvParseNested> EnvParseNested for Option<T> {
-    fn from_env_var(
+    fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError>
@@ -34,14 +41,14 @@ impl<T: EnvParseNested> EnvParseNested for Option<T> {
         if !std::env::vars().any(|(k, _v)| k.starts_with(var_name)) {
             return Ok(None);
         }
-        Ok(Some(T::from_env_var(var_name, default)?))
+        Ok(Some(T::parse_from_env_var(var_name, default)?))
     }
 
-    fn inspect_env_entry(
+    fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {
-        T::inspect_env_entry(prefix, default)
+        T::get_env_entries(prefix, default)
     }
 }
 
@@ -60,15 +67,15 @@ macro_rules! implement_nested_t {
     ($x:ty) => {
         paste! {
             impl<T: EnvParseNested> EnvParseNested for $x::<T> {
-                fn from_env_var(var_name: impl AsRef<str>, default: Option<&str>) -> Result<Self, EnvStructError> {
-                    Ok(T::from_env_var(var_name, default)?.into())
+                fn parse_from_env_var(var_name: impl AsRef<str>, default: Option<&str>) -> Result<Self, EnvStructError> {
+                    Ok(T::parse_from_env_var(var_name, default)?.into())
                 }
 
-                fn inspect_env_entry(
+                fn get_env_entries(
                     prefix: impl AsRef<str>,
                     default: Option<&str>,
                 ) -> Result<Vec<EnvEntry>, EnvStructError> {
-                    T::inspect_env_entry(prefix, default)
+                    T::get_env_entries(prefix, default)
                 }
             }
         }

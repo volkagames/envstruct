@@ -19,7 +19,7 @@ pub trait EnvStructUsage: EnvParseNested {
             Cell::new("DEFAULT"),
         ]));
 
-        for entry in Self::inspect_env_entry(prefix, None)? {
+        for entry in Self::get_env_entries(prefix, None)? {
             table.add_row(Row::new(vec![
                 Cell::new(&entry.name),
                 Cell::new(&strip_namespace(&entry.typ)),
