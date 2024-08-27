@@ -48,11 +48,13 @@ impl EnvStructFieldReceiver {
     }
 
     pub fn type_expr(&self) -> proc_macro2::TokenStream {
-        let ty = normalize_type_path(&self.ty);
         self.with
             .as_ref()
-            .map(|ty| quote! { #ty })
-            .unwrap_or(quote! { #ty })
+            .map(|ty| quote_spanned! { ty.span() => #ty })
+            .unwrap_or({
+                let ty = normalize_type_path(&self.ty);
+                quote_spanned! { ty.span() => #ty }
+            })
     }
 
     pub fn default_expr(&self) -> proc_macro2::TokenStream {
@@ -100,7 +102,7 @@ impl ToTokens for EnvStructInputReceiver {
 
         let impl_block = match data {
             ast::Data::Enum(_) => {
-                quote! {
+                quote_spanned! {ty.span() =>
                     impl #imp ::envstruct::EnvParsePrimitive for #ident #ty #where_clause {
                         fn parse(val: &str) -> std::result::Result<Self, ::envstruct::StdError> {
                             Ok(val.parse::<#ident>()?)
