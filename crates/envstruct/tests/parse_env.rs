@@ -657,7 +657,7 @@ fn test_usage_output() {
         pub env_map: EnvMap<i32, String>,
     }
 
-    let usage = Config::usage("TEST").unwrap();
+    let usage = Config::usage_with_prefix("TEST").unwrap();
     println!("usage: \n{usage}");
     assert!(usage.contains("TEST_FILE_PATH"));
     assert!(usage.contains("TEST_VEC_OF_STRINGS"));

@@ -32,6 +32,6 @@ pub struct DB {
 fn main() -> Result<(), envstruct::EnvStructError> {
     let config = Config::with_prefix("MY_APP")?;
     println!("{:#?}", config);
-    println!("{}", Config::usage("MY_APP")?);
+    println!("{}", Config::usage_with_prefix("MY_APP")?);
     Ok(())
 }

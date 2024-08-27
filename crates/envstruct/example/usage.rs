@@ -29,6 +29,6 @@ pub struct Config {
 }
 
 fn main() {
-    let usage = Config::usage("TEST").unwrap();
+    let usage = Config::usage_with_prefix("TEST").unwrap();
     println!("usage: \n{usage}");
 }

@@ -8,10 +8,11 @@ pub struct EnvEntry {
 }
 
 pub trait EnvStructUsage: EnvParseNested {
-    fn usage(prefix: impl AsRef<str>) -> Result<String, EnvStructError>
-    where
-        Self: Sized,
-    {
+    fn usage() -> Result<String, EnvStructError> {
+        Self::usage_with_prefix("")
+    }
+
+    fn usage_with_prefix(prefix: impl AsRef<str>) -> Result<String, EnvStructError> {
         let mut table = Table::new();
         table.set_titles(Row::new(vec![
             Cell::new("NAME"),
