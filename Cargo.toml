@@ -10,6 +10,6 @@ keywords = ["config", "env", "macro", "configuration", "environment"]
 license = "MPL-2.0"
 readme = "README.md"
 repository = "https://github.com/volkagames/envstruct.git"
-version = "1.0.1"
+version = "1.0.2"
 description = "Convert the environment variables into a structured configuration"
 documentation = "https://docs.rs/enstruct"
