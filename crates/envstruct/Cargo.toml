@@ -50,3 +50,7 @@ env_uppercase = []
 [[example]]
 name = "usage"
 path = "example/usage.rs"
+
+[[example]]
+name = "basic"
+path = "example/basic.rs"
