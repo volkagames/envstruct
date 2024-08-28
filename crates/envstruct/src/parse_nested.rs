@@ -38,9 +38,16 @@ impl<T: EnvParseNested> EnvParseNested for Option<T> {
         Self: Sized,
     {
         let var_name = var_name.as_ref();
-        if !std::env::vars().any(|(k, _v)| k.starts_with(var_name)) {
+
+        // Defining any environment variable of optional type makes the field required
+        // otherwise it is None.
+        if !T::get_env_entries(var_name, default)?
+            .iter()
+            .any(|entry| std::env::var_os(&entry.name).is_some())
+        {
             return Ok(None);
         }
+
         Ok(Some(T::parse_from_env_var(var_name, default)?))
     }
 

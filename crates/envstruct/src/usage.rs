@@ -24,7 +24,13 @@ pub trait EnvStructUsage: EnvParseNested {
             table.add_row(Row::new(vec![
                 Cell::new(&entry.name),
                 Cell::new(&strip_namespace(&entry.typ)),
-                Cell::new(&entry.default.unwrap_or_default()),
+                Cell::new(
+                    // quote all default values to distinct it from empty strings
+                    &entry
+                        .default
+                        .map(|v| format!(r#""{v}""#))
+                        .unwrap_or_default(),
+                ),
             ]));
         }
 

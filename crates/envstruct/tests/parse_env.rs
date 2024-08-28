@@ -41,6 +41,12 @@ impl EnvParsePrimitive for Point {
     }
 }
 
+fn clean_env() {
+    std::env::vars().for_each(|(name, _)| {
+        std::env::remove_var(name);
+    });
+}
+
 #[test]
 fn test_enum_parsing() {
     #[derive(EnvStruct, Debug)]
@@ -51,6 +57,7 @@ fn test_enum_parsing() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_MODE", "local");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.mode, RunMode::local);
@@ -58,6 +65,7 @@ fn test_enum_parsing() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_MODE", "foo");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -69,7 +77,7 @@ fn test_enum_parsing() {
 
     // undefined value
     {
-        env::remove_var("TEST_MODE");
+        clean_env();
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
         assert!(matches!(
@@ -89,6 +97,7 @@ fn test_custom_parsing() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_POINT", "(1,2)");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.point, Point { x: 1, y: 2 });
@@ -96,6 +105,7 @@ fn test_custom_parsing() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_POINT", "1,2,3");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -107,7 +117,7 @@ fn test_custom_parsing() {
 
     // undefined value
     {
-        env::remove_var("TEST_POINT");
+        clean_env();
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
         assert!(matches!(
@@ -137,6 +147,7 @@ fn test_nested_config_parsing() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_FOO_BAR_BAZ", "some value");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.foo.bar.baz, "some value");
@@ -144,6 +155,7 @@ fn test_nested_config_parsing() {
 
     // valid value with option
     {
+        clean_env();
         env::set_var("TEST_FOO_BAR_BAZ", "some value");
         env::set_var("TEST_FOO_BAR_OPT", "other value");
         let config = Config::with_prefix("TEST").unwrap();
@@ -153,6 +165,7 @@ fn test_nested_config_parsing() {
 
     // empty value
     {
+        clean_env();
         env::set_var("TEST_FOO_BAR_BAZ", "");
         env::set_var("TEST_FOO_BAR_OPT", "");
         let config = Config::with_prefix("TEST").unwrap();
@@ -162,8 +175,7 @@ fn test_nested_config_parsing() {
 
     // undefined value
     {
-        env::remove_var("TEST_FOO_BAR_BAZ");
-        env::remove_var("TEST_FOO_BAR_OPT");
+        clean_env();
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
         assert!(matches!(
@@ -184,6 +196,7 @@ fn test_path_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_FILE_PATH", "/foo/bar/path");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.file_path, std::path::Path::new("/foo/bar/path"));
@@ -191,6 +204,7 @@ fn test_path_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var(
             "TEST_FILE_PATH",
             std::ffi::OsStr::from_bytes(b"Hello\xFFworld"),
@@ -213,6 +227,7 @@ fn test_duration_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_DURATION", "60s");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.duration.as_secs(), 60);
@@ -220,6 +235,7 @@ fn test_duration_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_DURATION", "-2s");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -235,10 +251,12 @@ fn test_bytesize_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_BYTESIZE", "1Mb");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.bytesize.as_u64(), 1000 * 1000);
 
+        clean_env();
         env::set_var("TEST_BYTESIZE", "1Mib");
         let config = Config::with_prefix("TEST").unwrap();
         assert_eq!(config.bytesize.as_u64(), 1024 * 1024);
@@ -246,6 +264,7 @@ fn test_bytesize_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_BYTESIZE", "-42");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -261,6 +280,7 @@ fn test_url_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var(
             "TEST_URL",
             "https://user:password@example.com/path?query=arg#hash",
@@ -271,6 +291,7 @@ fn test_url_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_URL", "--://");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -286,6 +307,7 @@ fn test_regex_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_REGEX", "^(\\w+)-(\\w+)$");
         let config = Config::with_prefix("TEST").unwrap();
         assert!(config.regex.is_match("foo-bar"));
@@ -293,6 +315,7 @@ fn test_regex_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_REGEX", "(\\d+");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -310,6 +333,7 @@ fn test_date_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_DATETIME", "2024-08-19T12:34:56+03:00");
         env::set_var("TEST_UTC", "2024-08-19T12:34:56+03:00");
         env::set_var("TEST_NAIVE", "2024-08-19 12:34:56");
@@ -321,6 +345,7 @@ fn test_date_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_DATETIME", "42");
         env::set_var("TEST_UTC", "42");
         env::set_var("TEST_NAIVE", "42");
@@ -345,6 +370,7 @@ fn test_serde_values() {
 
     // valid value
     {
+        clean_env();
         env::set_var("TEST_VALUE1", r#"{"foo": "bar"}"#);
         env::set_var("TEST_VALUE2", r#"{"bar": "example", "baz": 42}"#);
         let config = Config::with_prefix("TEST").unwrap();
@@ -355,6 +381,7 @@ fn test_serde_values() {
 
     // invalid value
     {
+        clean_env();
         env::set_var("TEST_VALUE1", "}");
         let res = Config::with_prefix("TEST");
         assert!(res.is_err());
@@ -373,6 +400,7 @@ fn test_map_values() {
         pub env_map: EnvMap<i32, String>,
     }
 
+    clean_env();
     env::set_var("TEST_ENV_MAP_1", "foo");
     env::set_var("TEST_ENV_MAP_2", "bar");
     env::set_var("TEST_ENV_MAP_3", "baz");
@@ -400,6 +428,7 @@ fn test_container_values() {
         pub map_str_vec_of_bool: BTreeMap<String, Vec<bool>>,
     }
 
+    clean_env();
     env::set_var("TEST_VEC_OF_STRINGS", "foo,bar,baz");
     env::set_var("TEST_VEC_OF_INTS", "1, 2, 3, 4,");
     env::set_var("TEST_VEC_OF_FLOATS", "1.2, 3.4, 5.6");
@@ -458,6 +487,7 @@ fn test_rc_value() {
         pub mode2: std::rc::Rc<RunMode>,
     }
 
+    clean_env();
     env::set_var("TEST_MODE1", "remote");
     let config = Config::with_prefix("TEST").unwrap();
     assert_eq!(*config.mode1, RunMode::remote);
@@ -516,6 +546,7 @@ fn test_default_value() {
         pub mode5: Variant,
     }
 
+    clean_env();
     env::set_var("TEST_MODE4", "one");
     env::set_var("TEST_MODE5", "two");
     let config = Config::with_prefix("TEST").unwrap();
@@ -538,6 +569,7 @@ fn test_flatten_enum() {
         pub mode: RunMode,
     }
 
+    clean_env();
     env::set_var("TEST", "remote");
     let config = Config::with_prefix("TEST").unwrap();
     assert_eq!(config.mode, RunMode::remote);
@@ -569,6 +601,7 @@ fn test_flatten_struct() {
     #[derive(EnvStruct, Debug, PartialEq)]
     pub struct DefaultTrue(#[env(default = true)] pub bool);
 
+    clean_env();
     env::set_var("TEST_DSN", "dsn://localhost/?");
     env::set_var("TEST_SECRET", "secret");
     let config = Config::with_prefix("TEST").unwrap();
@@ -620,6 +653,7 @@ fn test_with_override() {
         pub secret: String,
     }
 
+    clean_env();
     env::set_var("TEST_VALUE1", "foo");
     env::set_var("TEST_DB", r#"{"dsn": "localhost", "secret": "my secret"}"#);
     let config = Config::with_prefix("TEST").unwrap();
@@ -657,9 +691,73 @@ fn test_usage_output() {
         pub env_map: EnvMap<i32, String>,
     }
 
+    clean_env();
     let usage = Config::usage_with_prefix("TEST").unwrap();
     println!("usage: \n{usage}");
     assert!(usage.contains("TEST_FILE_PATH"));
     assert!(usage.contains("TEST_VEC_OF_STRINGS"));
     assert!(usage.contains("TEST_MAP_STR_VEC_OF_BOOL"));
+}
+
+#[test]
+fn test_optional_struct() {
+    #[derive(EnvStruct, Debug)]
+    pub struct Config {
+        #[env(flatten)]
+        pub foo: Option<Foo>,
+        pub bar: Option<Bar>,
+        pub baz: Option<Baz>,
+    }
+
+    #[derive(EnvStruct, Debug)]
+    pub struct Foo {
+        pub url: url::Url,
+    }
+
+    #[derive(EnvStruct, Debug)]
+    pub struct Bar {
+        pub name: String,
+        #[env(default = "")]
+        pub other: String,
+    }
+
+    #[derive(EnvStruct, Debug)]
+    pub struct Baz {
+        pub dsn: String,
+        pub ttl: u64,
+    }
+
+    let usage = Config::usage_with_prefix("TEST").unwrap();
+    println!("usage: \n{usage}");
+
+    // all fields are expected to be optional, not required, and flatten
+    // does not trigger any errors.
+    {
+        clean_env();
+        let config = Config::with_prefix("TEST").unwrap();
+        assert!(config.foo.is_none());
+        assert!(config.bar.is_none());
+    }
+
+    // setting at least one variable of BAR to make field required
+    {
+        clean_env();
+        env::set_var("TEST_BAR_NAME", "bar");
+        let config = Config::with_prefix("TEST").unwrap();
+        assert!(config.foo.is_none());
+        assert!(config.bar.is_some());
+    }
+
+    // setting TTL makes DSN a required field. Since DSN is not defined, this causes an error.
+    {
+        clean_env();
+        env::set_var("TEST_BAZ_TTL", "42");
+        let res = Config::with_prefix("TEST");
+        println!("res: {res:?}");
+        assert!(res.is_err());
+        assert!(matches!(
+            res.err().unwrap(),
+            envstruct::EnvStructError::MissingEnvVar { .. }
+        ));
+    }
 }
