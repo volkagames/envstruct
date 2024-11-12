@@ -2,6 +2,7 @@
 
 use envstruct::{prelude::*, StdError};
 use serde::Deserialize;
+use serial_test::*;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr};
 
 #[allow(non_camel_case_types)]
@@ -48,6 +49,7 @@ fn clean_env() {
 }
 
 #[test]
+#[serial]
 fn test_enum_parsing() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -88,6 +90,7 @@ fn test_enum_parsing() {
 }
 
 #[test]
+#[serial]
 fn test_custom_parsing() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -128,6 +131,7 @@ fn test_custom_parsing() {
 }
 
 #[test]
+#[serial]
 fn test_nested_config_parsing() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -186,6 +190,7 @@ fn test_nested_config_parsing() {
 }
 
 #[test]
+#[serial]
 fn test_path_values() {
     use std::os::unix::ffi::OsStrExt;
 
@@ -219,6 +224,7 @@ fn test_path_values() {
 }
 
 #[test]
+#[serial]
 fn test_duration_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -243,6 +249,7 @@ fn test_duration_values() {
 }
 
 #[test]
+#[serial]
 fn test_bytesize_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -272,6 +279,7 @@ fn test_bytesize_values() {
 }
 
 #[test]
+#[serial]
 fn test_url_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -299,6 +307,7 @@ fn test_url_values() {
 }
 
 #[test]
+#[serial]
 fn test_regex_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -323,6 +332,7 @@ fn test_regex_values() {
 }
 
 #[test]
+#[serial]
 fn test_date_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -355,6 +365,7 @@ fn test_date_values() {
 }
 
 #[test]
+#[serial]
 fn test_serde_values() {
     #[derive(Debug, Clone, serde::Deserialize)]
     pub struct Foo {
@@ -394,6 +405,7 @@ fn test_serde_values() {
 }
 
 #[test]
+#[serial]
 fn test_map_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -414,6 +426,7 @@ fn test_map_values() {
 }
 
 #[test]
+#[serial]
 fn test_container_values() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -478,6 +491,7 @@ fn test_container_values() {
 }
 
 #[test]
+#[serial]
 fn test_rc_value() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -495,6 +509,7 @@ fn test_rc_value() {
 }
 
 #[test]
+#[serial]
 fn test_default_value() {
     #[allow(non_camel_case_types)]
     #[derive(
@@ -561,6 +576,7 @@ fn test_default_value() {
 }
 
 #[test]
+#[serial]
 fn test_flatten_enum() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -576,6 +592,7 @@ fn test_flatten_enum() {
 }
 
 #[test]
+#[serial]
 fn test_flatten_struct() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -620,6 +637,7 @@ fn test_flatten_struct() {
 }
 
 #[test]
+#[serial]
 fn test_with_override() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -662,6 +680,7 @@ fn test_with_override() {
 }
 
 #[test]
+#[serial]
 fn test_usage_output() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {
@@ -700,6 +719,7 @@ fn test_usage_output() {
 }
 
 #[test]
+#[serial]
 fn test_optional_struct() {
     #[derive(EnvStruct, Debug)]
     pub struct Config {

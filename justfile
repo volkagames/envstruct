@@ -1,7 +1,7 @@
 set export
 
 test *args='':
-    cargo nextest run --run-ignored default -j 1 $args
+    cargo nextest run --run-ignored default $args
 
 lint:
     cargo deny check advisories bans sources

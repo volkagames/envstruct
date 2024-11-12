@@ -16,7 +16,7 @@ bytesize = { version = "1", optional = true }
 chrono = { version = "0.4", optional = true }
 humantime = { version = "2", optional = true }
 regex = { version = "1", optional = true }
-thiserror = "1"
+thiserror = "2"
 url = { version = "2", optional = true }
 envstruct_derive = { path = "../envstruct_derive", version = "1.0" }
 prettytable-rs = "0.10"
@@ -27,7 +27,8 @@ serde = { version = "1", optional = true }
 [dev-dependencies]
 strum = { version = "0.26", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
-trybuild = "1.0.99"
+trybuild = "1.0.101"
+serial_test = "3.2.0"
 
 [features]
 default = [

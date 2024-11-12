@@ -34,6 +34,8 @@ struct EnvStructFieldReceiver {
     with: Option<syn::Expr>,
     #[darling(default)]
     flatten: bool,
+    #[darling(default)]
+    skip: bool,
 }
 
 impl EnvStructFieldReceiver {
@@ -120,14 +122,22 @@ impl ToTokens for EnvStructInputReceiver {
                         let var_default = field.default_expr();
                         let var_name_expr = field.var_name_expr();
 
-                        quote_spanned! {field.ty.span() =>
-                            #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
+                        if field.skip {
+                             quote_spanned! {field.ty.span() =>
+                                #field_name: Default::default()
+                            }
+                        } else {
+                            quote_spanned! {field.ty.span() =>
+                                #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
+                            }
                         }
+
                     })
                     .collect();
 
                 let inspect_exprs: Vec<_> = fields
                     .iter()
+                    .filter(|field| !field.skip)
                     .map(|field| {
                         let field_type = field.type_expr();
                         let var_default = field.default_expr();
