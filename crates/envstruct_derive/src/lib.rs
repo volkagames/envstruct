@@ -106,7 +106,7 @@ impl ToTokens for EnvStructInputReceiver {
             ast::Data::Enum(_) => {
                 quote_spanned! {ty.span() =>
                     impl #imp ::envstruct::EnvParsePrimitive for #ident #ty #where_clause {
-                        fn parse(val: &str) -> std::result::Result<Self, ::envstruct::StdError> {
+                        fn parse(val: &str) -> std::result::Result<Self, ::envstruct::BoxError> {
                             Ok(val.parse::<#ident>()?)
                         }
                     }

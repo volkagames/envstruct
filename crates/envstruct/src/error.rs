@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 const CAPTION: &str = "Configuration from environment variables failed";
 
@@ -11,7 +11,7 @@ pub enum EnvStructError {
         var_name: String,
         var_value: String,
         #[source]
-        source: StdError,
+        source: BoxError,
     },
 
     #[error("{CAPTION}. `{var_name}` unable to parse default value `{var_value}`, {source}")]
@@ -19,7 +19,7 @@ pub enum EnvStructError {
         var_name: String,
         var_value: String,
         #[source]
-        source: StdError,
+        source: BoxError,
     },
 
     #[error("{CAPTION}. Environment variable `{0}` is not present")]

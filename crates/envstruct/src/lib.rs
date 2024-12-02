@@ -1,3 +1,6 @@
+#![allow(internal_features)]
+#![feature(nonzero_internals)]
+
 mod env_json;
 mod env_map;
 mod error;

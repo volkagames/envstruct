@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use envstruct::{prelude::*, StdError};
+use envstruct::{prelude::*, BoxError};
 use serde::Deserialize;
 use serial_test::*;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr};
@@ -26,7 +26,7 @@ pub struct Point {
 }
 
 impl EnvParsePrimitive for Point {
-    fn parse(s: &str) -> Result<Self, StdError> {
+    fn parse(s: &str) -> Result<Self, BoxError> {
         let coords: Vec<&str> = s
             .trim_matches(|p| p == '(' || p == ')')
             .split(',')

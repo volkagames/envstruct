@@ -3,7 +3,7 @@ use paste::paste;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 pub trait EnvParsePrimitive {
-    fn parse(val: &str) -> Result<Self, StdError>
+    fn parse(val: &str) -> Result<Self, BoxError>
     where
         Self: Sized;
 
@@ -54,7 +54,7 @@ pub trait EnvParsePrimitive {
 macro_rules! implement_primitive {
     ($x:ty) => {
         impl EnvParsePrimitive for $x {
-            fn parse(val: &str) -> Result<Self, StdError> {
+            fn parse(val: &str) -> Result<Self, BoxError> {
                 Ok(val.trim().parse::<$x>()?)
             }
         }
@@ -79,6 +79,17 @@ implement_primitive!(i128);
 implement_primitive!(f32);
 implement_primitive!(f64);
 
+impl<T: EnvParsePrimitive + std::num::ZeroablePrimitive> EnvParsePrimitive
+    for std::num::NonZero<T>
+{
+    fn parse(val: &str) -> Result<Self, BoxError> {
+        let value = T::parse(val)?;
+        let nonzero = std::num::NonZero::new(value)
+            .ok_or_else(|| Box::new(EnvStructError::InvalidVarFormat(val.to_owned())))?;
+        Ok(nonzero)
+    }
+}
+
 implement_primitive!(std::path::PathBuf);
 
 #[cfg(feature = "serde_json")]
@@ -98,21 +109,21 @@ implement_primitive!(regex::Regex);
 
 #[cfg(feature = "chrono")]
 impl EnvParsePrimitive for chrono::DateTime<chrono::Utc> {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(chrono::DateTime::parse_from_rfc3339(val.trim())?.to_utc())
     }
 }
 
 #[cfg(feature = "chrono")]
 impl EnvParsePrimitive for chrono::DateTime<chrono::FixedOffset> {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(chrono::DateTime::parse_from_rfc3339(val.trim())?)
     }
 }
 
 #[cfg(feature = "chrono")]
 impl EnvParsePrimitive for chrono::NaiveDateTime {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(chrono::NaiveDateTime::parse_from_str(
             val.trim(),
             "%Y-%m-%d %H:%M:%S",
@@ -121,7 +132,7 @@ impl EnvParsePrimitive for chrono::NaiveDateTime {
 }
 
 impl EnvParsePrimitive for std::time::Duration {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(std::time::Duration::from_secs_f64(
             val.trim().parse::<f64>()?,
         ))
@@ -129,13 +140,13 @@ impl EnvParsePrimitive for std::time::Duration {
 }
 
 impl EnvParsePrimitive for String {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(val.trim().to_owned())
     }
 }
 
 impl<V: EnvParsePrimitive> EnvParsePrimitive for Vec<V> {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         val.split(',')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
@@ -149,7 +160,7 @@ where
     K: EnvParsePrimitive + std::hash::Hash + std::cmp::Eq,
     V: EnvParsePrimitive,
 {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         let v = val
             .split(';')
             .map(|s| s.trim())
@@ -169,7 +180,7 @@ where
     K: EnvParsePrimitive + std::cmp::Ord,
     V: EnvParsePrimitive,
 {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         let v = val
             .split(';')
             .map(|s| s.trim())
@@ -188,7 +199,7 @@ impl<V> EnvParsePrimitive for HashSet<V>
 where
     V: EnvParsePrimitive + std::hash::Hash + std::cmp::Eq,
 {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         let v = val
             .split(';')
             .map(|s| s.trim())
@@ -200,7 +211,7 @@ where
 }
 
 impl<T: EnvParsePrimitive> EnvParsePrimitive for Option<T> {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(Some(T::parse(val)?))
     }
 
@@ -222,7 +233,7 @@ macro_rules! implement_primitive_t {
     ($x:ty) => {
         paste! {
             impl<T: EnvParsePrimitive> EnvParsePrimitive for $x::<T> {
-                fn parse(val: &str) -> Result<Self, StdError> {
+                fn parse(val: &str) -> Result<Self, BoxError> {
                     Ok(T::parse(val.trim())?.into())
                 }
             }

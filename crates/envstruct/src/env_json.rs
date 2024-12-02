@@ -5,7 +5,7 @@ use crate::*;
 pub struct EnvJson<T: for<'a> serde::de::Deserialize<'a>>(T);
 
 impl<T: for<'a> serde::de::Deserialize<'a>> EnvParsePrimitive for EnvJson<T> {
-    fn parse(val: &str) -> Result<Self, StdError> {
+    fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(EnvJson(serde_json::from_str(val)?))
     }
 }

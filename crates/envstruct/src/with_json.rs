@@ -5,7 +5,7 @@ use crate::*;
 pub struct WithJson<T: for<'a> serde::de::Deserialize<'a>>(T);
 
 impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
-    pub fn parse(val: &str) -> Result<T, StdError> {
+    pub fn parse(val: &str) -> Result<T, BoxError> {
         Ok(serde_json::from_str(val)?)
     }
 
