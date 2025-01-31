@@ -8,6 +8,7 @@ documentation = { workspace = true }
 edition = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+repository = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
@@ -27,7 +28,7 @@ url = { version = "2", optional = true }
 serde = { version = "1", features = ["derive"] }
 serial_test = "3.2.0"
 strum = { version = "0.26", features = ["derive"] }
-trybuild = "1.0.101"
+trybuild = "1.0.103"
 
 [features]
 default = [

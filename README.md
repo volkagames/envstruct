@@ -1,6 +1,6 @@
 # EnvStruct
 
-Yo, check it. EnvStruct is here to make handling those env variables smooth as butter. It’s packed with tools to pull common types straight from environment variables and drop 'em into nested structures, no hassle. Plus, it's got those dope derive macros that keep things simple. This crate is all about that "battery included" life, bringing built-in support for the usual suspects and types, so you can hit the ground running with ease.
+EnvStruct simplifies the process of handling environment variables in Rust applications. It provides tools to parse common types from environment variables and map them into nested structures effortlessly. With derive macros, the crate ensures clean and readable code. EnvStruct offers built-in support for various types, making it easy to get started quickly.
 
 ## Installation
 
@@ -56,32 +56,32 @@ fn main() -> Result<(), envstruct::EnvStructError> {
 ## Features
 
 - Nested Structures: Parse environment variables into nested Rust structures.
-- Custom Parsing: Create custom parsers for specialized types.
-- Prefix Support: Seamlessly handle environment variables with a common prefix.
-- Default Values: Set default values for environment variables when they aren't provided.
-- Error Handling: Receive detailed error messages to troubleshoot environment configuration issues effectively.
-- Testing: benefit from a well-tested library with numerous test cases for reliability.
-- Derive macros: Clean and readable thanks to darling crate
+- Custom Parsing: Create custom parsers for special types.
+- Prefix Support: Handle environment variables with a common prefix.
+- Default Values: Set default values for environment variables.
+- Error Handling: Get detailed error messages for troubleshooting.
+- Testing: Well-tested library with many test cases.
+- Derive Macros: Clean and readable code with derive macros.
 
-## Complex types
+## Complex Types
 
-- Dates and Times: Parse chrono::DateTime and chrono::NaiveDateTime types, allowing you to easily work with dates and times directly from your environment variables.
-- Durations: Parse duration from environment variables in human-readable formats, such as "1h", "30m", or "15s".
-- URLs: Parse url::Url to handle and validate URLs from your environment variables, ensuring they are well-formed and valid.
-- Regex Patterns: Parse regex::Regex to validate or match patterns directly from environment variables, allowing for dynamic regular expressions.
-- File Paths: Parse std::path::PathBuf to work with file and directory paths, providing flexibility in file system operations.
-- Byte Sizes: Parse sizes like "10KB", "5MB", or "1GB" into u64 representing bytes, useful for memory-related configurations.
-- JSON Values: Parse serde_json::Value for scenarios where you need to handle arbitrary JSON data from environment variables.
-- Collections: Parse std::collections::HashMap, std::collections::BTreeMap, and std::collections::HashSet directly from environment variables, key-value pairs are separated by ";", with each key and value separated by "=".
-- Vec parse from environment variables, values can be separated by commas, allowing you to handle lists of items easily.
-- EnvMap: Parse variables with a common prefix into a HashMap.
+- Dates and Times: Parse `chrono::DateTime` and `chrono::NaiveDateTime` types.
+- Durations: Parse durations like "1h", "30m", or "15s".
+- URLs: Parse `url::Url` to handle and validate URLs.
+- Regex Patterns: Parse `regex::Regex` for dynamic regular expressions.
+- File Paths: Parse `std::path::PathBuf` for file and directory paths.
+- Byte Sizes: Parse sizes like "10KB", "5MB", or "1GB" into bytes.
+- JSON Values: Parse `serde_json::Value` for arbitrary JSON data.
+- Collections: Parse `HashMap`, `BTreeMap`, and `HashSet` from environment variables.
+- Vectors: Parse lists of items separated by commas.
+- EnvMap: Parse variables with a common prefix into a `HashMap`.
 
-## Macro attributes
+## Macro Attributes
 
-- `name` - name of an environment variable which provides a field value.
-- `default` - default value of a field if an environment variable doesn't exist. If the environment variable exist but has invalid value an error returns.
-- `flatten` - allows to ignore the field name when collecting the full name of an environment variable
-- `with` - custom parser for field
+- `name`: Name of the environment variable for a field.
+- `default`: Default value if the environment variable doesn't exist.
+- `flatten`: Ignore the field name when collecting the full name of an environment variable.
+- `with`: Custom parser for a field.
 
 ## License
 

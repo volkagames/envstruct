@@ -2,11 +2,31 @@ use crate::*;
 use paste::paste;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+/// A trait for parsing environment variables into primitive types.
 pub trait EnvParsePrimitive {
+    /// Parses a string value into the implementing type.
+    ///
+    /// # Arguments
+    ///
+    /// * `val` - A string slice that holds the value to be parsed.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, BoxError>` - The parsed value or an error.
     fn parse(val: &str) -> Result<Self, BoxError>
     where
         Self: Sized;
 
+    /// Parses an environment variable into the implementing type.
+    ///
+    /// # Arguments
+    ///
+    /// * `var_name` - The name of the environment variable.
+    /// * `default` - An optional default value if the environment variable is not set.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, EnvStructError>` - The parsed value or an error.
     fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
@@ -39,6 +59,16 @@ pub trait EnvParsePrimitive {
         }
     }
 
+    /// Retrieves environment variable entries for documentation purposes.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix for the environment variable names.
+    /// * `default` - An optional default value.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Vec<EnvEntry>, EnvStructError>` - A list of environment entries or an error.
     fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
@@ -78,17 +108,6 @@ implement_primitive!(i128);
 
 implement_primitive!(f32);
 implement_primitive!(f64);
-
-impl<T: EnvParsePrimitive + std::num::ZeroablePrimitive> EnvParsePrimitive
-    for std::num::NonZero<T>
-{
-    fn parse(val: &str) -> Result<Self, BoxError> {
-        let value = T::parse(val)?;
-        let nonzero = std::num::NonZero::new(value)
-            .ok_or_else(|| Box::new(EnvStructError::InvalidVarFormat(val.to_owned())))?;
-        Ok(nonzero)
-    }
-}
 
 implement_primitive!(std::path::PathBuf);
 
@@ -245,3 +264,29 @@ implement_primitive_t!(std::cell::Cell);
 implement_primitive_t!(std::cell::RefCell);
 implement_primitive_t!(std::rc::Rc);
 implement_primitive_t!(std::sync::Arc);
+
+macro_rules! implement_non_zero {
+    ($x:ty) => {
+        impl EnvParsePrimitive for $x {
+            fn parse(val: &str) -> Result<Self, BoxError> {
+                let value: $x = val
+                    .parse()
+                    .map_err(|_err| Box::new(EnvStructError::InvalidVarFormat(val.to_owned())))?;
+                Ok(value)
+            }
+        }
+    };
+}
+
+implement_non_zero!(std::num::NonZeroU8);
+implement_non_zero!(std::num::NonZeroU16);
+implement_non_zero!(std::num::NonZeroU32);
+implement_non_zero!(std::num::NonZeroU64);
+implement_non_zero!(std::num::NonZeroU128);
+implement_non_zero!(std::num::NonZeroUsize);
+implement_non_zero!(std::num::NonZeroI8);
+implement_non_zero!(std::num::NonZeroI16);
+implement_non_zero!(std::num::NonZeroI32);
+implement_non_zero!(std::num::NonZeroI64);
+implement_non_zero!(std::num::NonZeroI128);
+implement_non_zero!(std::num::NonZeroIsize);

@@ -8,6 +8,7 @@ use proc_macro::TokenStream;
 use quote::*;
 use syn::spanned::Spanned;
 
+/// Derives the `EnvStruct` trait for a struct or enum.
 #[proc_macro_derive(EnvStruct, attributes(env))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let derive_input: syn::DeriveInput = syn::parse(input).expect("Failed to parse derive input");
@@ -16,6 +17,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     quote!(#receiver).into()
 }
 
+/// Receiver for the `EnvStruct` derive input.
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(EnvStruct), supports(any))]
 struct EnvStructInputReceiver {
@@ -24,6 +26,7 @@ struct EnvStructInputReceiver {
     data: ast::Data<(), EnvStructFieldReceiver>,
 }
 
+/// Receiver for the fields of the `EnvStruct`.
 #[derive(Debug, FromField)]
 #[darling(attributes(env))]
 struct EnvStructFieldReceiver {
@@ -39,6 +42,7 @@ struct EnvStructFieldReceiver {
 }
 
 impl EnvStructFieldReceiver {
+    /// Generates a token stream for the field name or index.
     pub fn name_exr(&self, index: usize) -> proc_macro2::TokenStream {
         self.ident
             .as_ref()
@@ -49,6 +53,7 @@ impl EnvStructFieldReceiver {
             })
     }
 
+    /// Generates a token stream for the field type.
     pub fn type_expr(&self) -> proc_macro2::TokenStream {
         self.with
             .as_ref()
@@ -59,6 +64,7 @@ impl EnvStructFieldReceiver {
             })
     }
 
+    /// Generates a token stream for the default value of the field.
     pub fn default_expr(&self) -> proc_macro2::TokenStream {
         self.default
             .as_ref()
@@ -77,6 +83,7 @@ impl EnvStructFieldReceiver {
             .unwrap_or_else(|| quote!(None))
     }
 
+    /// Generates a token stream for the environment variable name.
     pub fn var_name_expr(&self) -> proc_macro2::TokenStream {
         let var_name = self.name.clone().unwrap_or_else(|| {
             self.ident

@@ -1,7 +1,13 @@
 use crate::*;
 use paste::paste;
 
+/// Trait for parsing nested environment variables.
 pub trait EnvParseNested {
+    /// Creates a new instance by parsing environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if parsing fails.
     fn new() -> Result<Self, EnvStructError>
     where
         Self: Sized,
@@ -9,6 +15,15 @@ pub trait EnvParseNested {
         Self::parse_from_env_var("", None)
     }
 
+    /// Creates a new instance with a specified prefix by parsing environment variables.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix for the environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if parsing fails.
     fn with_prefix(prefix: impl AsRef<str>) -> Result<Self, EnvStructError>
     where
         Self: Sized,
@@ -16,6 +31,16 @@ pub trait EnvParseNested {
         Self::parse_from_env_var(prefix, None)
     }
 
+    /// Parses the environment variable with an optional default value.
+    ///
+    /// # Arguments
+    ///
+    /// * `var_name` - The name of the environment variable.
+    /// * `default` - An optional default value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if parsing fails.
     fn parse_from_env_var(
         var_name: impl AsRef<str>,
         default: Option<&str>,
@@ -23,6 +48,16 @@ pub trait EnvParseNested {
     where
         Self: Sized;
 
+    /// Retrieves the environment entries with a specified prefix and optional default value.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix for the environment variables.
+    /// * `default` - An optional default value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if retrieval fails.
     fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
@@ -59,6 +94,16 @@ impl<T: EnvParseNested> EnvParseNested for Option<T> {
     }
 }
 
+/// Concatenates two environment variable names with an underscore.
+///
+/// # Arguments
+///
+/// * `lhs` - The left-hand side of the environment variable name.
+/// * `rhs` - The right-hand side of the environment variable name.
+///
+/// # Returns
+///
+/// A concatenated string of the two environment variable names.
 pub fn concat_env_name(lhs: impl AsRef<str>, rhs: impl AsRef<str>) -> String {
     let (lhs, rhs) = (lhs.as_ref().to_uppercase(), rhs.as_ref().to_uppercase());
     #[cfg(feature = "env_uppercase")]

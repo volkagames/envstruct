@@ -8,6 +8,7 @@ documentation = { workspace = true }
 edition = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+repository = { workspace = true }
 version = { workspace = true }
 
 [lib]
@@ -15,6 +16,6 @@ proc-macro = true
 
 [dependencies]
 darling = "0.20.10"
-proc-macro2 = "1.0.92"
-quote = "1.0.37"
+proc-macro2 = "1.0.93"
+quote = "1.0.38"
 syn = "2"

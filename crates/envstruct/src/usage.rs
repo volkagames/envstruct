@@ -1,17 +1,25 @@
 use crate::*;
 use prettytable::{format, Cell, Row, Table};
 
+/// Represents an environment variable entry with its name, type, and optional default value.
 pub struct EnvEntry {
     pub name: String,
     pub typ: String,
     pub default: Option<String>,
 }
 
+/// A trait for generating usage information for environment variables.
 pub trait EnvStructUsage: EnvParseNested {
+    /// Generates a usage table for environment variables without any prefix.
     fn usage() -> Result<String, EnvStructError> {
         Self::usage_with_prefix("")
     }
 
+    /// Generates a usage table for environment variables with the given prefix.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A string slice that holds the prefix to be used for the environment variables.
     fn usage_with_prefix(prefix: impl AsRef<str>) -> Result<String, EnvStructError> {
         let mut table = Table::new();
         table.set_titles(Row::new(vec![
@@ -42,8 +50,15 @@ pub trait EnvStructUsage: EnvParseNested {
 
 impl<T: EnvParseNested> EnvStructUsage for T {}
 
-// https://users.rust-lang.org/t/how-can-i-convert-a-struct-name-to-a-string/66724/7
-// thanks Quine Dot
+/// Strips the namespace from a type name, leaving only the base type.
+///
+/// # Arguments
+///
+/// * `name` - A string slice that holds the fully qualified type name.
+///
+/// # Returns
+///
+/// A `String` containing the base type name without the namespace.
 fn strip_namespace(name: &str) -> String {
     // Off the top of my head
     static SPLITTERS: &[char] = &[
