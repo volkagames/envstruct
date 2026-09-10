@@ -44,7 +44,15 @@ pub trait EnvStructUsage: EnvParseNested {
 
         table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
 
-        Ok(table.to_string())
+        // prettytable's FORMAT_NO_BORDER_LINE_SEPARATOR still writes right padding
+        // (rp == 1) after skip_r_fill, so every line ends with trailing space(s).
+        Ok(table
+            .to_string()
+            .lines()
+            .map(str::trim_end)
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n")
     }
 }
 
