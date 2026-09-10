@@ -716,6 +716,10 @@ fn test_usage_output() {
     assert!(usage.contains("TEST_FILE_PATH"));
     assert!(usage.contains("TEST_VEC_OF_STRINGS"));
     assert!(usage.contains("TEST_MAP_STR_VEC_OF_BOOL"));
+    assert!(
+        usage.lines().all(|line| line == line.trim_end()),
+        "usage output must not have trailing whitespace"
+    );
 }
 
 #[test]

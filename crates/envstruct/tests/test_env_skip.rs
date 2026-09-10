@@ -45,6 +45,10 @@ fn test_env_skip() {
     println!("usage: \n{usage}");
     assert_eq!(
         usage,
-        " NAME        | TYPE   | DEFAULT \n-------------+--------+---------\n TEST_VALUE1 | String |  \n TEST_VALUE4 | i32    |  \n"
+        " NAME        | TYPE   | DEFAULT\n-------------+--------+---------\n TEST_VALUE1 | String |\n TEST_VALUE4 | i32    |\n"
+    );
+    assert!(
+        usage.lines().all(|line| line == line.trim_end()),
+        "usage output must not have trailing whitespace"
     );
 }
