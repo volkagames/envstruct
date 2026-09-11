@@ -1,6 +1,4 @@
 [package]
-name = "envstruct"
-resolver = "2"
 authors = { workspace = true }
 categories = { workspace = true }
 description = { workspace = true }
@@ -8,11 +6,15 @@ documentation = { workspace = true }
 edition = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+name = "envstruct"
 readme = { workspace = true }
 repository = { workspace = true }
+resolver = "2"
 version = { workspace = true }
 
 [features]
+bytesize = ["dep:bytesize"]
+chrono = ["dep:chrono"]
 default = [
     "bytesize",
     "chrono",
@@ -22,13 +24,11 @@ default = [
     "url",
     "env_uppercase",
 ]
-bytesize = ["dep:bytesize"]
-chrono = ["dep:chrono"]
+env_uppercase = []
 humantime = ["dep:humantime"]
 regex = ["dep:regex"]
 serde_json = ["dep:serde_json", "dep:serde"]
 url = ["dep:url"]
-env_uppercase = []
 
 [dependencies]
 bytesize = { version = "2", optional = true }
@@ -45,9 +45,9 @@ url = { version = "2", optional = true }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-serial_test = "3.5.0"
+serial_test = "4.0"
 strum = { version = "0.28", features = ["derive"] }
-trybuild = "1.0.116"
+trybuild = "1.0.121"
 
 [[example]]
 name = "usage"

@@ -1,5 +1,7 @@
 /// Represents the default value for a field in the `EnvStruct`.
 #[derive(Debug)]
+// proc-macro: размер enum неважен, экземпляры единичны и живут только во время компиляции
+#[allow(clippy::large_enum_variant)]
 pub enum DefaultAttr {
     /// A string literal default value.
     String(String),

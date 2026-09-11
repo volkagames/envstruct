@@ -1,6 +1,4 @@
 [package]
-name = "envstruct_derive"
-resolver = "2"
 authors = { workspace = true }
 categories = { workspace = true }
 description = { workspace = true }
@@ -8,14 +6,16 @@ documentation = { workspace = true }
 edition = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+name = "envstruct_derive"
 repository = { workspace = true }
+resolver = "2"
 version = { workspace = true }
 
 [lib]
 proc-macro = true
 
 [dependencies]
-darling = "0.23"
-proc-macro2 = "1.0.106"
-quote = "1.0.45"
-syn = "2"
+darling = "0.24"
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = "3"
