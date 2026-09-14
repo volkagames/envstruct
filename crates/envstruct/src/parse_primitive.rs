@@ -59,6 +59,27 @@ pub trait EnvParsePrimitive {
         }
     }
 
+    /// Builds the usage tree of a type that parses from a single environment variable.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix for the environment variable names.
+    /// * `default` - An optional default value.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<UsageTree, EnvStructError>` - The usage tree or an error.
+    fn get_usage_tree(
+        prefix: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<UsageTree, EnvStructError> {
+        Ok(UsageTree::leaf_field(
+            prefix.as_ref(),
+            std::any::type_name::<Self>(),
+            default.map(|v| v.to_string()),
+        ))
+    }
+
     /// Retrieves environment variable entries for documentation purposes.
     ///
     /// # Arguments
@@ -73,11 +94,7 @@ pub trait EnvParsePrimitive {
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {
-        Ok(vec![EnvEntry {
-            name: prefix.as_ref().to_string(),
-            typ: std::any::type_name::<Self>().to_string(),
-            default: default.map(|v| v.to_string()),
-        }])
+        Ok(Self::get_usage_tree(prefix, default)?.flatten_entries())
     }
 }
 

@@ -65,6 +65,18 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
         }
     }
 
+    /// Usage tree for a JSON environment variable.
+    pub fn get_usage_tree(
+        prefix: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<UsageTree, EnvStructError> {
+        Ok(UsageTree::leaf_field(
+            prefix.as_ref(),
+            std::any::type_name::<Self>(),
+            default.map(|v| v.to_string()),
+        ))
+    }
+
     /// Retrieves environment variable entries for documentation purposes.
     ///
     /// # Arguments
@@ -80,10 +92,6 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Vec<EnvEntry>, EnvStructError> {
-        Ok(vec![EnvEntry {
-            name: prefix.as_ref().to_string(),
-            typ: std::any::type_name::<Self>().to_string(),
-            default: default.map(|v| v.to_string()),
-        }])
+        Ok(Self::get_usage_tree(prefix, default)?.flatten_entries())
     }
 }

@@ -48,6 +48,21 @@ pub trait EnvParseNested {
     where
         Self: Sized;
 
+    /// Builds the usage tree with a specified prefix and optional default value.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - A prefix for the environment variables.
+    /// * `default` - An optional default value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if retrieval fails.
+    fn get_usage_tree(
+        prefix: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<UsageTree, EnvStructError>;
+
     /// Retrieves the environment entries with a specified prefix and optional default value.
     ///
     /// # Arguments
@@ -61,7 +76,9 @@ pub trait EnvParseNested {
     fn get_env_entries(
         prefix: impl AsRef<str>,
         default: Option<&str>,
-    ) -> Result<Vec<EnvEntry>, EnvStructError>;
+    ) -> Result<Vec<EnvEntry>, EnvStructError> {
+        Ok(Self::get_usage_tree(prefix, default)?.flatten_entries())
+    }
 }
 
 impl<T: EnvParseNested> EnvParseNested for Option<T> {
@@ -86,11 +103,13 @@ impl<T: EnvParseNested> EnvParseNested for Option<T> {
         Ok(Some(T::parse_from_env_var(var_name, default)?))
     }
 
-    fn get_env_entries(
+    fn get_usage_tree(
         prefix: impl AsRef<str>,
         default: Option<&str>,
-    ) -> Result<Vec<EnvEntry>, EnvStructError> {
-        T::get_env_entries(prefix, default)
+    ) -> Result<UsageTree, EnvStructError> {
+        let mut tree = T::get_usage_tree(prefix, default)?;
+        tree.kind = UsageTreeKind::OptionalStruct;
+        Ok(tree)
     }
 }
 
@@ -123,11 +142,11 @@ macro_rules! implement_nested_t {
                     Ok(T::parse_from_env_var(var_name, default)?.into())
                 }
 
-                fn get_env_entries(
+                fn get_usage_tree(
                     prefix: impl AsRef<str>,
                     default: Option<&str>,
-                ) -> Result<Vec<EnvEntry>, EnvStructError> {
-                    T::get_env_entries(prefix, default)
+                ) -> Result<UsageTree, EnvStructError> {
+                    T::get_usage_tree(prefix, default)
                 }
             }
         }

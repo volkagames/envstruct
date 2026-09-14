@@ -43,7 +43,8 @@ impl EnvParsePrimitive for Point {
 }
 
 fn clean_env() {
-    std::env::vars().for_each(|(name, _)| {
+    // vars() panics on non-unicode values, which some tests set on purpose.
+    std::env::vars_os().for_each(|(name, _)| {
         std::env::remove_var(name);
     });
 }
@@ -655,6 +656,13 @@ fn test_with_override() {
             _default: Option<&str>,
         ) -> Result<String, EnvStructError> {
             Ok("override value".to_string())
+        }
+
+        fn get_usage_tree(
+            prefix: impl AsRef<str>,
+            default: Option<&str>,
+        ) -> Result<UsageTree, EnvStructError> {
+            String::get_usage_tree(prefix, default)
         }
 
         fn get_env_entries(

@@ -151,7 +151,9 @@ impl ToTokens for EnvStructInputReceiver {
                         let var_name_expr = field.var_name_expr();
 
                         quote_spanned! {field.ty.span() =>
-                            #field_type::get_env_entries(#var_name_expr, #var_default)?
+                            ::envstruct::attach_field_usage(
+                                #field_type::get_usage_tree(#var_name_expr, #var_default)?,
+                            )
                         }
                     })
                     .collect();
@@ -165,8 +167,12 @@ impl ToTokens for EnvStructInputReceiver {
                             })
                         }
 
-                        fn get_env_entries(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Vec<::envstruct::EnvEntry>, ::envstruct::EnvStructError> {
-                            Ok(vec![#( #inspect_exprs, )*].into_iter().flatten().collect())
+                        fn get_usage_tree(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<::envstruct::UsageTree, ::envstruct::EnvStructError> {
+                            let nested: Vec<Vec<::envstruct::UsageItem>> = vec![#( #inspect_exprs, )*];
+                            Ok(::envstruct::UsageTree {
+                                kind: ::envstruct::UsageTreeKind::Struct,
+                                items: nested.into_iter().flatten().collect(),
+                            })
                         }
                     }
                 }
