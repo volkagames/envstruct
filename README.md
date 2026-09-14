@@ -46,7 +46,7 @@ pub struct DB {
 fn main() -> Result<(), envstruct::EnvStructError> {
     let config = Config::with_prefix("MY_APP")?;
     println!("{:#?}", config);
-    println!("{}", Config::usage("MY_APP")?);
+    println!("{}", Config::usage_with_prefix("MY_APP")?);
     Ok(())
 }
 
@@ -82,6 +82,10 @@ fn main() -> Result<(), envstruct::EnvStructError> {
 - `default`: Default value if the environment variable doesn't exist.
 - `flatten`: Ignore the field name when collecting the full name of an environment variable.
 - `with`: Custom parser for a field.
+- `title`: Optional group heading in usage output. If omitted, the field name is used (`client_registry` → `Client Registry`).
+- `used_if`: Application-usage condition as `field=value`. Shown in usage; not enforced by the parser.
+- `inline`: Merge a nested struct's fields into the parent usage group.
+- `skip`: Do not parse or document the field.
 
 ## License
 

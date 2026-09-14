@@ -72,8 +72,10 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
     ) -> Result<UsageTree, EnvStructError> {
         Ok(UsageTree::leaf_field(
             prefix.as_ref(),
-            std::any::type_name::<Self>(),
-            default.map(|v| v.to_string()),
+            UsageType::Other("json".to_string()),
+            default.is_none(),
+            default.map(str::to_string),
+            None,
         ))
     }
 

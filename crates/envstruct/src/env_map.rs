@@ -69,24 +69,21 @@ where
         Ok(Self(map))
     }
 
-    /// Usage tree for the `EnvMap`, which reads every variable under its prefix.
-    ///
-    /// # Arguments
-    ///
-    /// * `prefix` - The prefix for the environment entries.
-    /// * `default` - An optional default value.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `EnvStructError` if retrieval fails.
     fn get_usage_tree(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<UsageTree, EnvStructError> {
         Ok(UsageTree::leaf_field(
             format!("{}_*", prefix.as_ref()),
-            std::any::type_name::<Self>(),
-            default.map(|v| v.to_string()),
+            UsageType::Map(
+                Box::new(UsageType::Other(
+                    strip_namespace(std::any::type_name::<K>()),
+                )),
+                Box::new(V::usage_type()),
+            ),
+            default.is_none(),
+            default.map(str::to_string),
+            None,
         ))
     }
 }

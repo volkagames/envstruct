@@ -59,24 +59,32 @@ pub trait EnvParsePrimitive {
         }
     }
 
-    /// Builds the usage tree of a type that parses from a single environment variable.
-    ///
-    /// # Arguments
-    ///
-    /// * `prefix` - A prefix for the environment variable names.
-    /// * `default` - An optional default value.
-    ///
-    /// # Returns
-    ///
-    /// * `Result<UsageTree, EnvStructError>` - The usage tree or an error.
+    /// Human-facing type shown in usage output.
+    fn usage_type() -> UsageType {
+        UsageType::Other(strip_namespace(std::any::type_name::<Self>()))
+    }
+
+    /// Closed set of allowed values, if known from the type declaration.
+    fn usage_values() -> Option<Vec<String>> {
+        None
+    }
+
+    /// Whether omitting the variable leaves this field unset.
+    fn usage_optional() -> bool {
+        false
+    }
+
+    /// Usage tree for this primitive value.
     fn get_usage_tree(
         prefix: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<UsageTree, EnvStructError> {
         Ok(UsageTree::leaf_field(
             prefix.as_ref(),
-            std::any::type_name::<Self>(),
-            default.map(|v| v.to_string()),
+            Self::usage_type(),
+            !Self::usage_optional() && default.is_none(),
+            default.map(str::to_string),
+            Self::usage_values(),
         ))
     }
 
@@ -99,54 +107,76 @@ pub trait EnvParsePrimitive {
 }
 
 macro_rules! implement_primitive {
-    ($x:ty) => {
+    ($x:ty, $usage:expr) => {
         impl EnvParsePrimitive for $x {
             fn parse(val: &str) -> Result<Self, BoxError> {
                 Ok(val.trim().parse::<$x>()?)
+            }
+
+            fn usage_type() -> UsageType {
+                $usage
             }
         }
     };
 }
 
-implement_primitive!(bool); // "true" | "false"
-implement_primitive!(usize);
-implement_primitive!(char);
-implement_primitive!(u8);
-implement_primitive!(u16);
-implement_primitive!(u32);
-implement_primitive!(u64);
-implement_primitive!(u128);
+/// Inclusive bounds of a numeric type, for types narrow enough that they matter.
+macro_rules! int_bounds {
+    ($x:ty, $excludes_zero:expr) => {
+        UsageType::Integer(Some(IntLimit::Range {
+            min: <$x>::MIN.to_string(),
+            max: <$x>::MAX.to_string(),
+            excludes_zero: $excludes_zero,
+        }))
+    };
+}
 
-implement_primitive!(i8);
-implement_primitive!(i16);
-implement_primitive!(i32);
-implement_primitive!(i64);
-implement_primitive!(i128);
+implement_primitive!(bool, UsageType::Bool); // "true" | "false"
+implement_primitive!(char, UsageType::Other("char".to_string()));
 
-implement_primitive!(f32);
-implement_primitive!(f64);
+// Only narrow integers report bounds: for the wider ones the limits exist, but no
+// realistic configuration value can reach them.
+implement_primitive!(u8, int_bounds!(u8, false));
+implement_primitive!(u16, int_bounds!(u16, false));
+implement_primitive!(u32, UsageType::Integer(None));
+implement_primitive!(u64, UsageType::Integer(None));
+implement_primitive!(u128, UsageType::Integer(None));
+implement_primitive!(usize, UsageType::Integer(None));
 
-implement_primitive!(std::path::PathBuf);
+implement_primitive!(i8, int_bounds!(i8, false));
+implement_primitive!(i16, int_bounds!(i16, false));
+implement_primitive!(i32, UsageType::Integer(None));
+implement_primitive!(i64, UsageType::Integer(None));
+implement_primitive!(i128, UsageType::Integer(None));
+
+implement_primitive!(f32, UsageType::Float);
+implement_primitive!(f64, UsageType::Float);
+
+implement_primitive!(std::path::PathBuf, UsageType::String);
 
 #[cfg(feature = "serde_json")]
-implement_primitive!(serde_json::Value);
+implement_primitive!(serde_json::Value, UsageType::Other("json".to_string()));
 
 #[cfg(feature = "humantime")]
-implement_primitive!(humantime::Duration); // "60s"
+implement_primitive!(humantime::Duration, UsageType::Duration); // "60s"
 
 #[cfg(feature = "bytesize")]
-implement_primitive!(bytesize::ByteSize); // "1.50MB"
+implement_primitive!(bytesize::ByteSize, UsageType::ByteSize); // "1.50MB"
 
 #[cfg(feature = "url")]
-implement_primitive!(url::Url); // "https://user:password@example.com/path?query=arg#hash"
+implement_primitive!(url::Url, UsageType::Url); // "https://user:password@example.com/path?query=arg#hash"
 
 #[cfg(feature = "regex")]
-implement_primitive!(regex::Regex);
+implement_primitive!(regex::Regex, UsageType::Other("regex".to_string()));
 
 #[cfg(feature = "chrono")]
 impl EnvParsePrimitive for chrono::DateTime<chrono::Utc> {
     fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(chrono::DateTime::parse_from_rfc3339(val.trim())?.to_utc())
+    }
+
+    fn usage_type() -> UsageType {
+        UsageType::Other("datetime".to_string())
     }
 }
 
@@ -154,6 +184,10 @@ impl EnvParsePrimitive for chrono::DateTime<chrono::Utc> {
 impl EnvParsePrimitive for chrono::DateTime<chrono::FixedOffset> {
     fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(chrono::DateTime::parse_from_rfc3339(val.trim())?)
+    }
+
+    fn usage_type() -> UsageType {
+        UsageType::Other("datetime".to_string())
     }
 }
 
@@ -165,6 +199,10 @@ impl EnvParsePrimitive for chrono::NaiveDateTime {
             "%Y-%m-%d %H:%M:%S",
         )?)
     }
+
+    fn usage_type() -> UsageType {
+        UsageType::Other("datetime".to_string())
+    }
 }
 
 impl EnvParsePrimitive for std::time::Duration {
@@ -173,11 +211,19 @@ impl EnvParsePrimitive for std::time::Duration {
             val.trim().parse::<f64>()?,
         ))
     }
+
+    fn usage_type() -> UsageType {
+        UsageType::Other("seconds".to_string())
+    }
 }
 
 impl EnvParsePrimitive for String {
     fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(val.trim().to_owned())
+    }
+
+    fn usage_type() -> UsageType {
+        UsageType::String
     }
 }
 
@@ -188,6 +234,10 @@ impl<V: EnvParsePrimitive> EnvParsePrimitive for Vec<V> {
             .filter(|s| !s.is_empty())
             .map(|s| V::parse(s))
             .collect::<Result<Vec<_>, _>>()
+    }
+
+    fn usage_type() -> UsageType {
+        UsageType::List(Box::new(V::usage_type()))
     }
 }
 
@@ -209,6 +259,10 @@ where
             .collect::<Result<HashMap<_, _>, _>>()?;
         Ok(v)
     }
+
+    fn usage_type() -> UsageType {
+        UsageType::Map(Box::new(K::usage_type()), Box::new(V::usage_type()))
+    }
 }
 
 impl<K, V> EnvParsePrimitive for BTreeMap<K, V>
@@ -229,6 +283,10 @@ where
             .collect::<Result<BTreeMap<_, _>, _>>()?;
         Ok(v)
     }
+
+    fn usage_type() -> UsageType {
+        UsageType::Map(Box::new(K::usage_type()), Box::new(V::usage_type()))
+    }
 }
 
 impl<V> EnvParsePrimitive for HashSet<V>
@@ -244,11 +302,27 @@ where
             .collect::<Result<HashSet<_>, _>>()?;
         Ok(v)
     }
+
+    fn usage_type() -> UsageType {
+        UsageType::Other(format!("set<{}>", V::usage_type().display()))
+    }
 }
 
 impl<T: EnvParsePrimitive> EnvParsePrimitive for Option<T> {
     fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(Some(T::parse(val)?))
+    }
+
+    fn usage_type() -> UsageType {
+        T::usage_type()
+    }
+
+    fn usage_values() -> Option<Vec<String>> {
+        T::usage_values()
+    }
+
+    fn usage_optional() -> bool {
+        true
     }
 
     fn parse_from_env_var(
@@ -272,6 +346,18 @@ macro_rules! implement_primitive_t {
                 fn parse(val: &str) -> Result<Self, BoxError> {
                     Ok(T::parse(val.trim())?.into())
                 }
+
+                fn usage_type() -> UsageType {
+                    T::usage_type()
+                }
+
+                fn usage_values() -> Option<Vec<String>> {
+                    T::usage_values()
+                }
+
+                fn usage_optional() -> bool {
+                    T::usage_optional()
+                }
             }
         }
     };
@@ -283,7 +369,7 @@ implement_primitive_t!(std::rc::Rc);
 implement_primitive_t!(std::sync::Arc);
 
 macro_rules! implement_non_zero {
-    ($x:ty) => {
+    ($x:ty, $usage:expr) => {
         impl EnvParsePrimitive for $x {
             fn parse(val: &str) -> Result<Self, BoxError> {
                 let value: $x = val
@@ -291,19 +377,56 @@ macro_rules! implement_non_zero {
                     .map_err(|_err| Box::new(EnvStructError::InvalidVarFormat(val.to_owned())))?;
                 Ok(value)
             }
+
+            fn usage_type() -> UsageType {
+                $usage
+            }
         }
     };
 }
 
-implement_non_zero!(std::num::NonZeroU8);
-implement_non_zero!(std::num::NonZeroU16);
-implement_non_zero!(std::num::NonZeroU32);
-implement_non_zero!(std::num::NonZeroU64);
-implement_non_zero!(std::num::NonZeroU128);
-implement_non_zero!(std::num::NonZeroUsize);
-implement_non_zero!(std::num::NonZeroI8);
-implement_non_zero!(std::num::NonZeroI16);
-implement_non_zero!(std::num::NonZeroI32);
-implement_non_zero!(std::num::NonZeroI64);
-implement_non_zero!(std::num::NonZeroI128);
-implement_non_zero!(std::num::NonZeroIsize);
+// Narrow NonZero types show their bounds; unsigned ones already start at 1, so only
+// the signed ones need the explicit zero exclusion. Wider ones show the exclusion alone.
+implement_non_zero!(std::num::NonZeroU8, int_bounds!(std::num::NonZeroU8, false));
+implement_non_zero!(
+    std::num::NonZeroU16,
+    int_bounds!(std::num::NonZeroU16, false)
+);
+implement_non_zero!(std::num::NonZeroI8, int_bounds!(std::num::NonZeroI8, true));
+implement_non_zero!(
+    std::num::NonZeroI16,
+    int_bounds!(std::num::NonZeroI16, true)
+);
+
+implement_non_zero!(
+    std::num::NonZeroU32,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroU64,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroU128,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroUsize,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroI32,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroI64,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroI128,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
+implement_non_zero!(
+    std::num::NonZeroIsize,
+    UsageType::Integer(Some(IntLimit::NonZero))
+);
