@@ -69,28 +69,24 @@ where
         Ok(Self(map))
     }
 
-    /// Gets the environment entries for the `EnvMap`.
+    /// Usage tree for the `EnvMap`, which reads every variable under its prefix.
     ///
     /// # Arguments
     ///
     /// * `prefix` - The prefix for the environment entries.
     /// * `default` - An optional default value.
     ///
-    /// # Returns
-    ///
-    /// A vector of `EnvEntry` objects.
-    ///
     /// # Errors
     ///
     /// Returns an `EnvStructError` if retrieval fails.
-    fn get_env_entries(
+    fn get_usage_tree(
         prefix: impl AsRef<str>,
         default: Option<&str>,
-    ) -> Result<Vec<EnvEntry>, EnvStructError> {
-        Ok(vec![EnvEntry {
-            name: format!("{}_*", prefix.as_ref()),
-            typ: std::any::type_name::<Self>().to_string(),
-            default: default.map(|v| v.to_string()),
-        }])
+    ) -> Result<UsageTree, EnvStructError> {
+        Ok(UsageTree::leaf_field(
+            format!("{}_*", prefix.as_ref()),
+            std::any::type_name::<Self>(),
+            default.map(|v| v.to_string()),
+        ))
     }
 }
