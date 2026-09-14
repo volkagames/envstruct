@@ -1,0 +1,5 @@
+error: env `default` and `default_note` cannot be set together
+ --> tests/compiletest/default_and_default_note.rs:6:9
+  |
+6 |     pub workers: Option<usize>,
+  |         ^^^^^^^

@@ -12,16 +12,16 @@ error[E0599]: no associated function or constant named `parse_from_env_var` foun
           candidate #1: `envstruct::EnvParseNested`
           candidate #2: `envstruct::EnvParsePrimitive`
 
-error[E0599]: no associated function or constant named `get_env_entries` found for struct `Foo` in the current scope
+error[E0599]: no associated function or constant named `get_usage_tree` found for struct `Foo` in the current scope
  --> tests/compiletest/derive_error_span.rs:7:10
   |
 3 | pub struct Foo {}
-  | -------------- associated function or constant `get_env_entries` not found for this struct
+  | -------------- associated function or constant `get_usage_tree` not found for this struct
 ...
 7 |     foo: Foo,
   |          ^^^ associated function or constant not found in `Foo`
   |
   = help: items from traits can only be used if the trait is implemented and in scope
-  = note: the following traits define an item `get_env_entries`, perhaps you need to implement one of them:
+  = note: the following traits define an item `get_usage_tree`, perhaps you need to implement one of them:
           candidate #1: `envstruct::EnvParseNested`
           candidate #2: `envstruct::EnvParsePrimitive`
