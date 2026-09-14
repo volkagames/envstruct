@@ -86,6 +86,10 @@ fn main() -> Result<(), envstruct::EnvStructError> {
 - `used_if`: Application-usage condition as `field=value`. Shown in usage; not enforced by the parser.
 - `inline`: Merge a nested struct's fields into the parent usage group.
 - `skip`: Do not parse or document the field.
+- `secret`: Mark the variable as a secret in usage output (`(secret)` after the name). Parsing is unchanged.
+- `default_note`: Runtime-computed default shown in the DEFAULT column in parentheses, as in `#[env(default_note = "physical CPU count")]`. Cannot be combined with `default`.
+
+DEFAULT is a quoted literal, a note in parentheses for a runtime default, `none` when an optional variable may be omitted, or `<required>` when a required variable has no default. A required field with `default_note` shows `<required> (note)` because the note does not supply a parser default.
 
 ## License
 

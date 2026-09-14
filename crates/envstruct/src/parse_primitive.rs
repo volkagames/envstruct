@@ -65,6 +65,8 @@ pub trait EnvParsePrimitive {
     }
 
     /// Closed set of allowed values, if known from the type declaration.
+    /// For maps and lists, describes keys and items respectively, rather than
+    /// complete variable values. Presence requirements are enforced by `parse`.
     fn usage_values() -> Option<Vec<String>> {
         None
     }
@@ -123,11 +125,20 @@ macro_rules! implement_primitive {
 /// Inclusive bounds of a numeric type, for types narrow enough that they matter.
 macro_rules! int_bounds {
     ($x:ty, $excludes_zero:expr) => {
-        UsageType::Integer(Some(IntLimit::Range {
-            min: <$x>::MIN.to_string(),
-            max: <$x>::MAX.to_string(),
-            excludes_zero: $excludes_zero,
-        }))
+        UsageType::Integer(
+            strip_namespace(stringify!($x)),
+            Some(IntLimit::Range {
+                min: <$x>::MIN.to_string(),
+                max: <$x>::MAX.to_string(),
+                excludes_zero: $excludes_zero,
+            }),
+        )
+    };
+}
+
+macro_rules! int_type {
+    ($x:ty) => {
+        UsageType::Integer(stringify!($x).to_string(), None)
     };
 }
 
@@ -135,24 +146,24 @@ implement_primitive!(bool, UsageType::Bool); // "true" | "false"
 implement_primitive!(char, UsageType::Other("char".to_string()));
 
 // Only narrow integers report bounds: for the wider ones the limits exist, but no
-// realistic configuration value can reach them.
+// realistic configuration value can reach them. The rust type name is still printed.
 implement_primitive!(u8, int_bounds!(u8, false));
 implement_primitive!(u16, int_bounds!(u16, false));
-implement_primitive!(u32, UsageType::Integer(None));
-implement_primitive!(u64, UsageType::Integer(None));
-implement_primitive!(u128, UsageType::Integer(None));
-implement_primitive!(usize, UsageType::Integer(None));
+implement_primitive!(u32, int_type!(u32));
+implement_primitive!(u64, int_type!(u64));
+implement_primitive!(u128, int_type!(u128));
+implement_primitive!(usize, int_type!(usize));
 
 implement_primitive!(i8, int_bounds!(i8, false));
 implement_primitive!(i16, int_bounds!(i16, false));
-implement_primitive!(i32, UsageType::Integer(None));
-implement_primitive!(i64, UsageType::Integer(None));
-implement_primitive!(i128, UsageType::Integer(None));
+implement_primitive!(i32, int_type!(i32));
+implement_primitive!(i64, int_type!(i64));
+implement_primitive!(i128, int_type!(i128));
 
-implement_primitive!(f32, UsageType::Float);
-implement_primitive!(f64, UsageType::Float);
+implement_primitive!(f32, UsageType::Float("f32".to_string()));
+implement_primitive!(f64, UsageType::Float("f64".to_string()));
 
-implement_primitive!(std::path::PathBuf, UsageType::String);
+implement_primitive!(std::path::PathBuf, UsageType::Other("path".to_string()));
 
 #[cfg(feature = "serde_json")]
 implement_primitive!(serde_json::Value, UsageType::Other("json".to_string()));
@@ -385,6 +396,12 @@ macro_rules! implement_non_zero {
     };
 }
 
+macro_rules! nonzero_type {
+    ($x:ty) => {
+        UsageType::Integer(strip_namespace(stringify!($x)), Some(IntLimit::NonZero))
+    };
+}
+
 // Narrow NonZero types show their bounds; unsigned ones already start at 1, so only
 // the signed ones need the explicit zero exclusion. Wider ones show the exclusion alone.
 implement_non_zero!(std::num::NonZeroU8, int_bounds!(std::num::NonZeroU8, false));
@@ -398,35 +415,17 @@ implement_non_zero!(
     int_bounds!(std::num::NonZeroI16, true)
 );
 
-implement_non_zero!(
-    std::num::NonZeroU32,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
-implement_non_zero!(
-    std::num::NonZeroU64,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
-implement_non_zero!(
-    std::num::NonZeroU128,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
+implement_non_zero!(std::num::NonZeroU32, nonzero_type!(std::num::NonZeroU32));
+implement_non_zero!(std::num::NonZeroU64, nonzero_type!(std::num::NonZeroU64));
+implement_non_zero!(std::num::NonZeroU128, nonzero_type!(std::num::NonZeroU128));
 implement_non_zero!(
     std::num::NonZeroUsize,
-    UsageType::Integer(Some(IntLimit::NonZero))
+    nonzero_type!(std::num::NonZeroUsize)
 );
-implement_non_zero!(
-    std::num::NonZeroI32,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
-implement_non_zero!(
-    std::num::NonZeroI64,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
-implement_non_zero!(
-    std::num::NonZeroI128,
-    UsageType::Integer(Some(IntLimit::NonZero))
-);
+implement_non_zero!(std::num::NonZeroI32, nonzero_type!(std::num::NonZeroI32));
+implement_non_zero!(std::num::NonZeroI64, nonzero_type!(std::num::NonZeroI64));
+implement_non_zero!(std::num::NonZeroI128, nonzero_type!(std::num::NonZeroI128));
 implement_non_zero!(
     std::num::NonZeroIsize,
-    UsageType::Integer(Some(IntLimit::NonZero))
+    nonzero_type!(std::num::NonZeroIsize)
 );

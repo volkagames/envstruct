@@ -35,10 +35,11 @@ struct EnvStructVariantReceiver {
 
 /// Receiver for the fields of the `EnvStruct`.
 #[derive(Debug, FromField)]
-#[darling(attributes(env))]
+#[darling(attributes(env), forward_attrs(doc))]
 struct EnvStructFieldReceiver {
     ident: Option<syn::Ident>,
     ty: syn::Type,
+    attrs: Vec<syn::Attribute>,
     name: Option<String>,
     default: Option<DefaultAttr>,
     with: Option<syn::Expr>,
@@ -50,9 +51,40 @@ struct EnvStructFieldReceiver {
     inline: bool,
     #[darling(default)]
     skip: bool,
+    #[darling(default)]
+    secret: bool,
+    default_note: Option<String>,
 }
 
 impl EnvStructFieldReceiver {
+    fn description_expr(&self) -> proc_macro2::TokenStream {
+        let lines: Vec<_> = self
+            .attrs
+            .iter()
+            .filter_map(|attr| {
+                let syn::Meta::NameValue(meta) = &attr.meta else {
+                    return None;
+                };
+                let syn::Expr::Lit(expr) = &meta.value else {
+                    return None;
+                };
+                let syn::Lit::Str(value) = &expr.lit else {
+                    return None;
+                };
+                Some(value.value())
+            })
+            .collect();
+        if lines.is_empty() {
+            return quote!(None);
+        }
+        let description = lines
+            .iter()
+            .map(|line| line.strip_prefix(' ').unwrap_or(line))
+            .collect::<Vec<_>>()
+            .join("\n");
+        quote!(Some(#description.to_string()))
+    }
+
     /// Generates a token stream for the field name or index.
     pub fn name_exr(&self, index: usize) -> proc_macro2::TokenStream {
         self.ident
@@ -161,117 +193,163 @@ fn used_if_expr(
     }
 }
 
-impl ToTokens for EnvStructInputReceiver {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+fn derive_error(span: proc_macro2::Span, message: &str) -> proc_macro2::TokenStream {
+    quote_spanned! { span => compile_error!(#message); }
+}
+
+impl EnvStructInputReceiver {
+    /// Implements `EnvParsePrimitive` for an enum of unit variants, listing the variants as
+    /// the accepted values of the variable.
+    fn enum_tokens(&self, variants: &[EnvStructVariantReceiver]) -> proc_macro2::TokenStream {
         let EnvStructInputReceiver {
-            ident,
-            generics,
-            data,
-            title,
+            ident, generics, ..
         } = self;
         let (imp, ty, where_clause) = generics.split_for_impl();
 
-        let impl_block = match data {
-            ast::Data::Enum(variants) => {
-                let variant_names: Vec<String> = variants
-                    .iter()
-                    .map(|variant| variant.ident.to_string())
-                    .collect();
-                quote_spanned! {ty.span() =>
-                    impl #imp ::envstruct::EnvParsePrimitive for #ident #ty #where_clause {
-                        fn parse(val: &str) -> std::result::Result<Self, ::envstruct::BoxError> {
-                            Ok(val.parse::<#ident>()?)
-                        }
+        let variant_names: Vec<String> = variants
+            .iter()
+            .map(|variant| variant.ident.to_string())
+            .collect();
 
-                        fn usage_type() -> ::envstruct::UsageType {
-                            ::envstruct::UsageType::Enum
-                        }
+        quote_spanned! {ty.span() =>
+            impl #imp ::envstruct::EnvParsePrimitive for #ident #ty #where_clause {
+                fn parse(val: &str) -> std::result::Result<Self, ::envstruct::BoxError> {
+                    Ok(val.parse::<#ident>()?)
+                }
 
-                        fn usage_values() -> Option<Vec<String>> {
-                            Some(vec![#( #variant_names.to_string(), )*])
-                        }
-                    }
+                fn usage_type() -> ::envstruct::UsageType {
+                    ::envstruct::UsageType::Enum
+                }
+
+                fn usage_values() -> Option<Vec<String>> {
+                    Some(vec![#( #variant_names.to_string(), )*])
                 }
             }
-            ast::Data::Struct(fields) => {
-                let field_exprs: Vec<_> = fields
-                    .iter()
-                    .enumerate()
-                    .map(|(index, field)| {
-                        let field_name = field.name_exr(index);
-                        let field_type = field.type_expr();
-                        let var_default = field.default_expr();
-                        let var_name_expr = field.var_name_expr();
+        }
+    }
 
-                        if field.skip {
-                            quote_spanned! {field.ty.span() =>
-                                #field_name: Default::default()
-                            }
-                        } else {
-                            quote_spanned! {field.ty.span() =>
-                                #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
-                            }
-                        }
-                    })
-                    .collect();
+    /// Implements `EnvParseNested` for a struct: every field parses from its own variable.
+    fn struct_tokens(
+        &self,
+        fields: &ast::Fields<EnvStructFieldReceiver>,
+    ) -> proc_macro2::TokenStream {
+        let EnvStructInputReceiver {
+            ident,
+            generics,
+            title,
+            ..
+        } = self;
+        let (imp, ty, where_clause) = generics.split_for_impl();
 
-                let inspect_exprs: Vec<_> = fields
-                    .iter()
-                    .filter(|field| !field.skip)
-                    .map(|field| {
-                        let field_type = field.type_expr();
-                        let var_default = field.default_expr();
-                        let var_name_expr = field.var_name_expr();
-                        let field_name_str = field.field_name_str();
-                        let flatten = field.flatten;
-                        let inline = field.inline;
-                        let title_expr = match &field.title {
-                            Some(title) => quote!(Some(#title.to_string())),
-                            None => quote!(None),
-                        };
-                        let used_if = used_if_expr(field, fields);
-                        quote_spanned! {field.ty.span() =>
-                            ::envstruct::attach_field_usage(
-                                #field_type::get_usage_tree(#var_name_expr, #var_default)?,
-                                ::envstruct::FieldUsageMeta {
-                                    field_name: #field_name_str,
-                                    title: #title_expr,
-                                    flatten: #flatten,
-                                    inline: #inline,
-                                    used_if: #used_if,
-                                },
-                            )
-                        }
-                    })
-                    .collect();
+        if let Some(field) = fields
+            .iter()
+            .find(|field| field.default.is_some() && field.default_note.is_some())
+        {
+            let span = field
+                .ident
+                .as_ref()
+                .map(|ident| ident.span())
+                .unwrap_or_else(|| field.ty.span());
+            return derive_error(
+                span,
+                "env `default` and `default_note` cannot be set together",
+            );
+        }
 
-                let struct_title = match title {
+        let field_exprs: Vec<_> = fields
+            .iter()
+            .enumerate()
+            .map(|(index, field)| {
+                let field_name = field.name_exr(index);
+                let field_type = field.type_expr();
+                let var_default = field.default_expr();
+                let var_name_expr = field.var_name_expr();
+
+                if field.skip {
+                    quote_spanned! {field.ty.span() =>
+                        #field_name: Default::default()
+                    }
+                } else {
+                    quote_spanned! {field.ty.span() =>
+                        #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
+                    }
+                }
+            })
+            .collect();
+
+        let inspect_exprs: Vec<_> = fields
+            .iter()
+            .filter(|field| !field.skip)
+            .map(|field| {
+                let field_type = field.type_expr();
+                let var_default = field.default_expr();
+                let var_name_expr = field.var_name_expr();
+                let field_name_str = field.field_name_str();
+                let flatten = field.flatten;
+                let inline = field.inline;
+                let secret = field.secret;
+                let description = field.description_expr();
+                let title_expr = match &field.title {
                     Some(title) => quote!(Some(#title.to_string())),
                     None => quote!(None),
                 };
+                let default_note_expr = match &field.default_note {
+                    Some(note) => quote!(Some(#note.to_string())),
+                    None => quote!(None),
+                };
+                let used_if = used_if_expr(field, fields);
+                quote_spanned! {field.ty.span() =>
+                    ::envstruct::attach_field_usage(
+                        #field_type::get_usage_tree(#var_name_expr, #var_default)?,
+                        ::envstruct::FieldUsageMeta {
+                            field_name: #field_name_str,
+                            title: #title_expr,
+                            flatten: #flatten,
+                            inline: #inline,
+                            used_if: #used_if,
+                            secret: #secret,
+                            default_note: #default_note_expr,
+                            description: #description,
+                        },
+                    )
+                }
+            })
+            .collect();
 
-                quote! {
-                    #[allow(clippy::useless_conversion)]
-                    impl #imp ::envstruct::EnvParseNested for #ident #ty #where_clause {
-                        fn parse_from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
-                            let _ = default;
-                            Ok(Self {
-                                #( #field_exprs, )*
-                            })
-                        }
+        let struct_title = match title {
+            Some(title) => quote!(Some(#title.to_string())),
+            None => quote!(None),
+        };
 
-                        fn get_usage_tree(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<::envstruct::UsageTree, ::envstruct::EnvStructError> {
-                            let _ = default;
-                            let nested: Vec<Vec<::envstruct::UsageItem>> = vec![#( #inspect_exprs, )*];
-                            Ok(::envstruct::UsageTree {
-                                title: #struct_title,
-                                kind: ::envstruct::UsageTreeKind::Struct,
-                                items: nested.into_iter().flatten().collect(),
-                            })
-                        }
-                    }
+        quote! {
+            #[allow(clippy::useless_conversion)]
+            impl #imp ::envstruct::EnvParseNested for #ident #ty #where_clause {
+                fn parse_from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
+                    let _ = default;
+                    Ok(Self {
+                        #( #field_exprs, )*
+                    })
+                }
+
+                fn get_usage_tree(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<::envstruct::UsageTree, ::envstruct::EnvStructError> {
+                    let _ = default;
+                    let nested: Vec<Vec<::envstruct::UsageItem>> = vec![#( #inspect_exprs, )*];
+                    Ok(::envstruct::UsageTree {
+                        title: #struct_title,
+                        kind: ::envstruct::UsageTreeKind::Struct,
+                        items: nested.into_iter().flatten().collect(),
+                    })
                 }
             }
+        }
+    }
+}
+
+impl ToTokens for EnvStructInputReceiver {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let impl_block = match &self.data {
+            ast::Data::Enum(variants) => self.enum_tokens(variants),
+            ast::Data::Struct(fields) => self.struct_tokens(fields),
         };
 
         tokens.extend(impl_block);
