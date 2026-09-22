@@ -150,6 +150,94 @@ impl EnvParsePrimitive for chrono::NaiveDateTime {
     }
 }
 
+#[cfg(feature = "jiff")]
+implement_primitive!(jiff::Timestamp); // "2024-01-01T00:00:00Z"
+
+// "2024-01-01T00:00:00+01:00[Europe/Berlin]" or a bare offset "2024-01-01T00:00:00+01:00"
+#[cfg(feature = "jiff")]
+impl EnvParsePrimitive for jiff::Zoned {
+    fn parse(val: &str) -> Result<Self, BoxError> {
+        let val = val.trim();
+        let pieces = jiff::fmt::temporal::Pieces::parse(val)?;
+
+        // `Zoned::from_str` rejects anything without a time zone annotation, so
+        // fall back to a fixed zone built from the offset the value carries
+        let Some(offset) = pieces.offset() else {
+            if pieces.time_zone_annotation().is_some() {
+                return Ok(val.parse()?);
+            }
+            return Err("datetime has neither a time zone nor an offset".into());
+        };
+        if pieces.time_zone_annotation().is_some() {
+            return Ok(val.parse()?);
+        }
+
+        let offset = match offset {
+            jiff::fmt::temporal::PiecesOffset::Zulu => jiff::tz::Offset::UTC,
+            other => other.to_numeric_offset(),
+        };
+        let time = pieces.time().unwrap_or(jiff::civil::Time::midnight());
+        Ok(pieces
+            .date()
+            .to_datetime(time)
+            .to_zoned(jiff::tz::TimeZone::fixed(offset))?)
+    }
+}
+
+#[cfg(feature = "jiff")]
+implement_primitive!(jiff::civil::DateTime); // "2024-01-01 00:00:00"
+
+#[cfg(feature = "jiff")]
+implement_primitive!(jiff::civil::Date); // "2024-01-01"
+
+#[cfg(feature = "jiff")]
+implement_primitive!(jiff::civil::Time); // "13:45:00"
+
+// accepts both the friendly syntax ("1h 30m") and ISO-8601 ("PT1H30M")
+#[cfg(feature = "jiff")]
+implement_primitive!(jiff::Span);
+
+/// Gregorian averages, matching how `humantime` expands the same units, so that
+/// one string means the same in both duration types this crate supports.
+#[cfg(feature = "jiff")]
+const SECS_PER_MONTH: i64 = 2_630_016; // 30.44 days
+
+#[cfg(feature = "jiff")]
+const SECS_PER_YEAR: i64 = 31_557_600; // 365.25 days
+
+#[cfg(feature = "jiff")]
+impl EnvParsePrimitive for jiff::SignedDuration {
+    fn parse(val: &str) -> Result<Self, BoxError> {
+        let val = val.trim();
+        if let Ok(duration) = val.parse() {
+            return Ok(duration);
+        }
+
+        // `SignedDuration` is an exact span of time, so its own parser rejects
+        // calendar units; a config value is never relative to a moment, which
+        // makes them plain duration units here, as they are in humantime
+        let span = val.parse::<jiff::Span>()?;
+        let calendar = jiff::SignedDuration::from_secs(
+            span.get_years() as i64 * SECS_PER_YEAR
+                + span.get_months() as i64 * SECS_PER_MONTH
+                + span.get_weeks() as i64 * 7 * 24 * 60 * 60,
+        );
+
+        // days and below are exact, so the reference date cannot affect them
+        let exact = jiff::Span::new()
+            .days(span.get_days())
+            .hours(span.get_hours())
+            .minutes(span.get_minutes())
+            .seconds(span.get_seconds())
+            .milliseconds(span.get_milliseconds())
+            .microseconds(span.get_microseconds())
+            .nanoseconds(span.get_nanoseconds())
+            .to_duration(jiff::civil::date(1970, 1, 1))?;
+
+        Ok(calendar + exact)
+    }
+}
+
 impl EnvParsePrimitive for std::time::Duration {
     fn parse(val: &str) -> Result<Self, BoxError> {
         Ok(std::time::Duration::from_secs_f64(

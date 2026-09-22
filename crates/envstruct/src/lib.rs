@@ -38,6 +38,13 @@ pub use chrono::{self, DateTime, TimeZone, Utc};
 #[cfg(feature = "humantime")]
 pub use humantime::{self, Duration};
 
+/// Re-export of the `jiff` crate if the `jiff` feature is enabled.
+///
+/// Only the crate itself is re-exported: `DateTime`, `Utc` and `Span` would
+/// collide with the flat `chrono` and `humantime` re-exports above.
+#[cfg(feature = "jiff")]
+pub use jiff;
+
 /// Re-export of the `url` crate if the `url` feature is enabled.
 #[cfg(feature = "url")]
 pub use url::{self, Url};
