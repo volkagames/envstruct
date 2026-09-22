@@ -713,9 +713,34 @@ fn test_usage_output() {
     clean_env();
     let usage = Config::usage_with_prefix("TEST").unwrap();
     println!("usage: \n{usage}");
-    assert!(usage.contains("TEST_FILE_PATH"));
-    assert!(usage.contains("TEST_VEC_OF_STRINGS"));
-    assert!(usage.contains("TEST_MAP_STR_VEC_OF_BOOL"));
+    assert_eq!(
+        usage,
+        concat!(
+            " NAME                     | TYPE                        | DEFAULT\n",
+            "--------------------------+-----------------------------+---------\n",
+            " TEST_FILE_PATH           | PathBuf                     |\n",
+            " TEST_DURATION            | Duration                    |\n",
+            " TEST_BYTESIZE            | ByteSize                    |\n",
+            " TEST_URL                 | Url                         |\n",
+            " TEST_REGEX               | Regex                       |\n",
+            " TEST_DATETIME            | DateTime<FixedOffset>       |\n",
+            " TEST_UTC                 | DateTime<Utc>               |\n",
+            " TEST_NAIVE               | NaiveDateTime               |\n",
+            " TEST_MODE                | RunMode                     |\n",
+            " TEST_DB_DSN              | String                      |\n",
+            " TEST_DB_SECRET           | String                      |\n",
+            " TEST_POINT               | Point                       |\n",
+            " TEST_VEC_OF_STRINGS      | Vec<String>                 |\n",
+            " TEST_VEC_OF_INTS         | Vec<i64>                    |\n",
+            " TEST_VEC_OF_FLOATS       | Vec<f64>                    |\n",
+            " TEST_VEC_OF_DURATIONS    | Vec<Duration>               |\n",
+            " TEST_VEC_OF_VEC          | Vec<Vec<String>>            |\n",
+            " TEST_MAP_STR_STR         | BTreeMap<String, String>    |\n",
+            " TEST_MAP_STR_INT         | BTreeMap<String, i64>       |\n",
+            " TEST_MAP_STR_VEC_OF_BOOL | BTreeMap<String, Vec<bool>> |\n",
+            " TEST_ENV_MAP_*           | EnvMap<i32, String>         |\n",
+        )
+    );
     assert!(
         usage.lines().all(|line| line == line.trim_end()),
         "usage output must not have trailing whitespace"
