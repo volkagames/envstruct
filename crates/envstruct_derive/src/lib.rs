@@ -114,7 +114,7 @@ impl ToTokens for EnvStructInputReceiver {
                 quote_spanned! {ty.span() =>
                     impl #imp ::envstruct::EnvParsePrimitive for #ident #ty #where_clause {
                         fn parse(val: &str) -> std::result::Result<Self, ::envstruct::BoxError> {
-                            Ok(val.parse::<#ident>()?)
+                            ::core::result::Result::Ok(val.parse::<#ident>()?)
                         }
                     }
                 }
@@ -160,13 +160,13 @@ impl ToTokens for EnvStructInputReceiver {
                     #[allow(clippy::useless_conversion)]
                     impl #imp ::envstruct::EnvParseNested for #ident #ty #where_clause {
                         fn parse_from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
-                            Ok(Self {
+                            ::core::result::Result::Ok(Self {
                                 #( #field_exprs, )*
                             })
                         }
 
                         fn get_env_entries(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Vec<::envstruct::EnvEntry>, ::envstruct::EnvStructError> {
-                            Ok(vec![#( #inspect_exprs, )*].into_iter().flatten().collect())
+                            ::core::result::Result::Ok(vec![#( #inspect_exprs, )*].into_iter().flatten().collect())
                         }
                     }
                 }
