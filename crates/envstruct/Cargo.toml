@@ -34,7 +34,7 @@ url = ["dep:url"]
 [dependencies]
 bytesize = { version = "2", optional = true }
 chrono = { version = "0.4", optional = true }
-envstruct_derive = { path = "../envstruct_derive", version = "1.0" }
+envstruct_derive = { path = "../envstruct_derive", version = "=1.3.1" }
 humantime = { version = "2", optional = true }
 jiff = { version = "0.2", optional = true }
 pastey = "0.2"
