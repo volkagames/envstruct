@@ -1,0 +1,6 @@
+# the library must never panic on user input; these std calls do
+disallowed-methods = [
+    { path = "std::env::vars", reason = "panics on any non-UTF-8 variable, use `std::env::vars_os`" },
+    { path = "std::time::Duration::from_secs_f64", reason = "panics on negative, non-finite or overflowing input, use `try_from_secs_f64`" },
+    { path = "std::time::Duration::from_secs_f32", reason = "panics on negative, non-finite or overflowing input, use `try_from_secs_f32`" },
+]

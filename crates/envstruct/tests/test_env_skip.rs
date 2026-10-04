@@ -22,7 +22,7 @@ pub struct Config {
 pub struct Foo {}
 
 fn clean_env() {
-    std::env::vars().for_each(|(name, _)| {
+    std::env::vars_os().for_each(|(name, _)| {
         std::env::remove_var(name);
     });
 }

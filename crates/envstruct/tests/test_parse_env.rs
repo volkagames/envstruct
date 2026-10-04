@@ -43,7 +43,7 @@ impl EnvParsePrimitive for Point {
 }
 
 fn clean_env() {
-    std::env::vars().for_each(|(name, _)| {
+    std::env::vars_os().for_each(|(name, _)| {
         std::env::remove_var(name);
     });
 }
@@ -423,6 +423,138 @@ fn test_map_values() {
     assert_eq!(config.env_map.get(&1), Some(&"foo".to_string()));
     assert_eq!(config.env_map.get(&2), Some(&"bar".to_string()));
     assert_eq!(config.env_map.get(&3), Some(&"baz".to_string()));
+}
+
+#[test]
+#[serial]
+fn test_map_prefix_boundary() {
+    use std::os::unix::ffi::OsStrExt;
+
+    #[derive(EnvStruct, Debug)]
+    pub struct Config {
+        pub env_map: EnvMap<i32, String>,
+    }
+
+    #[derive(EnvStruct, Debug)]
+    pub struct StringKeys {
+        pub env_map: EnvMap<String, String>,
+    }
+
+    // names that only share leading characters with the prefix are not keys;
+    // with an `i32` key they used to fail the whole config
+    {
+        clean_env();
+        env::set_var("TEST_ENV_MAP_1", "foo");
+        env::set_var("TEST_ENV_MAPPING_X", "bar");
+        env::set_var("TEST_ENV_MAP", "baz");
+        env::set_var(std::ffi::OsStr::from_bytes(b"TEST_ENV_MAPPING_\xFF"), "qux");
+        let config = Config::with_prefix("TEST").unwrap();
+        assert_eq!(
+            config.env_map.0,
+            [(1, "foo".to_string())].into_iter().collect()
+        );
+    }
+
+    // with a `String` key they used to land in the map silently
+    {
+        clean_env();
+        env::set_var("TEST_ENV_MAP_A", "a");
+        env::set_var("TEST_ENV_MAPX", "x");
+        let config = StringKeys::with_prefix("TEST").unwrap();
+        assert_eq!(
+            config.env_map.0,
+            [("A".to_string(), "a".to_string())].into_iter().collect()
+        );
+    }
+
+    // extra separators are still tolerated
+    {
+        clean_env();
+        env::set_var("TEST_ENV_MAP__2", "foo");
+        let config = Config::with_prefix("TEST").unwrap();
+        assert_eq!(
+            config.env_map.0,
+            [(2, "foo".to_string())].into_iter().collect()
+        );
+    }
+
+    // a map at the root takes every variable
+    {
+        clean_env();
+        env::set_var("FOO", "1");
+        env::set_var("BAR_BAZ", "2");
+        let map = EnvMap::<String, i32>::new().unwrap();
+        assert_eq!(
+            map.0,
+            [("FOO".to_string(), 1), ("BAR_BAZ".to_string(), 2)]
+                .into_iter()
+                .collect()
+        );
+    }
+
+    clean_env();
+}
+
+#[test]
+#[serial]
+fn test_map_non_utf8_names() {
+    use std::os::unix::ffi::OsStrExt;
+
+    #[derive(EnvStruct, Debug)]
+    pub struct Config {
+        pub env_map: EnvMap<i32, String>,
+    }
+
+    // a non-UTF-8 name outside the prefix is not ours and is ignored
+    {
+        clean_env();
+        env::set_var("TEST_ENV_MAP_1", "foo");
+        env::set_var(std::ffi::OsStr::from_bytes(b"OTHER_\xFF"), "bar");
+        let config = Config::with_prefix("TEST").unwrap();
+        assert_eq!(config.env_map.len(), 1);
+        assert_eq!(config.env_map.get(&1), Some(&"foo".to_string()));
+    }
+
+    // a non-UTF-8 name under the prefix is reported, not panicked on
+    {
+        clean_env();
+        env::set_var(std::ffi::OsStr::from_bytes(b"TEST_ENV_MAP_\xFF"), "bar");
+        let res = Config::with_prefix("TEST");
+        assert!(matches!(
+            res.err().unwrap(),
+            envstruct::EnvStructError::InvalidKeyFormat(_)
+        ));
+    }
+
+    clean_env();
+}
+
+#[test]
+#[serial]
+fn test_std_duration_values() {
+    #[derive(EnvStruct, Debug)]
+    pub struct Config {
+        pub timeout: std::time::Duration,
+    }
+
+    clean_env();
+    env::set_var("TEST_TIMEOUT", "1.5");
+    let config = Config::with_prefix("TEST").unwrap();
+    assert_eq!(config.timeout, std::time::Duration::from_millis(1500));
+
+    // values `Duration::from_secs_f64` would panic on
+    for value in ["-1", "NaN", "inf", "1e300"] {
+        clean_env();
+        env::set_var("TEST_TIMEOUT", value);
+        let res = Config::with_prefix("TEST");
+        assert!(
+            matches!(
+                res.err().unwrap(),
+                envstruct::EnvStructError::ParseEnvError { .. }
+            ),
+            "{value}"
+        );
+    }
 }
 
 #[test]

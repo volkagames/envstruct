@@ -50,15 +50,31 @@ where
         Self: Sized,
     {
         let var_name = var_name.as_ref();
-        let map = std::env::vars()
-            .filter_map(|(k, _)| {
-                let key = k
-                    .strip_prefix(var_name)
-                    .map(|key| key.trim_start_matches('_'))?
-                    .to_string();
-                Some((k, key))
+        // keys start after a `_` separator, so `TEST_MAPPING` is not a key of `TEST_MAP`;
+        // a map at the root (empty prefix) takes every variable
+        let prefix = if var_name.is_empty() {
+            String::new()
+        } else {
+            format!("{var_name}_")
+        };
+        // `vars()` panics on any non-UTF-8 name in the process, even one outside the prefix
+        let map = std::env::vars_os()
+            .filter_map(|(k, _)| match k.into_string() {
+                Ok(k) => {
+                    let key = k.strip_prefix(&prefix)?.trim_start_matches('_').to_string();
+                    Some(Ok((k, key)))
+                }
+                Err(k) => k
+                    .as_encoded_bytes()
+                    .starts_with(prefix.as_bytes())
+                    .then(|| {
+                        Err(EnvStructError::InvalidKeyFormat(
+                            k.to_string_lossy().into_owned(),
+                        ))
+                    }),
             })
-            .map(|(k, key)| {
+            .map(|entry| {
+                let (k, key) = entry?;
                 Ok((
                     K::from_str(&key)
                         .map_err(|_| EnvStructError::InvalidKeyFormat(k.to_string()))?,

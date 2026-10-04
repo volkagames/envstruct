@@ -234,15 +234,18 @@ impl EnvParsePrimitive for jiff::SignedDuration {
             .nanoseconds(span.get_nanoseconds())
             .to_duration(jiff::civil::date(1970, 1, 1))?;
 
-        Ok(calendar + exact)
+        Ok(calendar
+            .checked_add(exact)
+            .ok_or("duration is out of range")?)
     }
 }
 
 impl EnvParsePrimitive for std::time::Duration {
     fn parse(val: &str) -> Result<Self, BoxError> {
-        Ok(std::time::Duration::from_secs_f64(
+        // `from_secs_f64` panics on negative, non-finite or overflowing values
+        Ok(std::time::Duration::try_from_secs_f64(
             val.trim().parse::<f64>()?,
-        ))
+        )?)
     }
 }
 

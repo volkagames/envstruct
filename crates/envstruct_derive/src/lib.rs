@@ -1,3 +1,16 @@
+// `unreachable` is left out: darling's generated `FromField` code uses it
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::panic,
+        clippy::todo,
+        clippy::unimplemented,
+        clippy::unwrap_used
+    )
+)]
+
 mod default_attr;
 mod normalize_type_path;
 
@@ -11,10 +24,11 @@ use syn::spanned::Spanned;
 /// Derives the `EnvStruct` trait for a struct or enum.
 #[proc_macro_derive(EnvStruct, attributes(env))]
 pub fn derive(input: TokenStream) -> TokenStream {
-    let derive_input: syn::DeriveInput = syn::parse(input).expect("Failed to parse derive input");
-    let receiver = EnvStructInputReceiver::from_derive_input(&derive_input)
-        .expect("Failed to parse input for darling receiver");
-    quote!(#receiver).into()
+    let derive_input = syn::parse_macro_input!(input as syn::DeriveInput);
+    match EnvStructInputReceiver::from_derive_input(&derive_input) {
+        Ok(receiver) => quote!(#receiver).into(),
+        Err(err) => err.write_errors().into(),
+    }
 }
 
 /// Receiver for the `EnvStruct` derive input.
