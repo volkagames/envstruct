@@ -6,8 +6,8 @@ default:
 lint:
     cargo deny check advisories bans sources
     cargo fmt --all --check
-    cargo check
-    cargo clippy
+    cargo check --all-features --all-targets
+    cargo clippy --all-features --all-targets
     cargo sort -c -w
 
 fix:

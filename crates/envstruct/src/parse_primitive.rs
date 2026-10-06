@@ -225,13 +225,13 @@ impl EnvParsePrimitive for jiff::SignedDuration {
 
         // days and below are exact, so the reference date cannot affect them
         let exact = jiff::Span::new()
-            .days(span.get_days())
-            .hours(span.get_hours())
-            .minutes(span.get_minutes())
-            .seconds(span.get_seconds())
-            .milliseconds(span.get_milliseconds())
-            .microseconds(span.get_microseconds())
-            .nanoseconds(span.get_nanoseconds())
+            .try_days(span.get_days())?
+            .try_hours(span.get_hours())?
+            .try_minutes(span.get_minutes())?
+            .try_seconds(span.get_seconds())?
+            .try_milliseconds(span.get_milliseconds())?
+            .try_microseconds(span.get_microseconds())?
+            .try_nanoseconds(span.get_nanoseconds())?
             .to_duration(jiff::civil::date(1970, 1, 1))?;
 
         Ok(calendar

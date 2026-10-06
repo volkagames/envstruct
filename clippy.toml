@@ -1,6 +1,28 @@
-# the library must never panic on user input; these std calls do
+# the library must never panic on user input; these calls do
 disallowed-methods = [
     { path = "std::env::vars", reason = "panics on any non-UTF-8 variable, use `std::env::vars_os`" },
     { path = "std::time::Duration::from_secs_f64", reason = "panics on negative, non-finite or overflowing input, use `try_from_secs_f64`" },
     { path = "std::time::Duration::from_secs_f32", reason = "panics on negative, non-finite or overflowing input, use `try_from_secs_f32`" },
+    # optional dependencies; `allow-invalid` keeps the paths quiet when the feature is off
+    { path = "jiff::SignedDuration::new", reason = "panics on overflow, use `checked_add` on parts", allow-invalid = true },
+    { path = "jiff::SignedDuration::from_hours", reason = "panics on overflow, compute seconds with checked arithmetic", allow-invalid = true },
+    { path = "jiff::SignedDuration::from_mins", reason = "panics on overflow, compute seconds with checked arithmetic", allow-invalid = true },
+    { path = "jiff::SignedDuration::from_secs_f64", reason = "panics on non-finite or overflowing input, use `try_from_secs_f64`", allow-invalid = true },
+    { path = "jiff::SignedDuration::from_secs_f32", reason = "panics on non-finite or overflowing input, use `try_from_secs_f32`", allow-invalid = true },
+    { path = "jiff::Span::years", reason = "panics when out of range, use `try_years`", allow-invalid = true },
+    { path = "jiff::Span::months", reason = "panics when out of range, use `try_months`", allow-invalid = true },
+    { path = "jiff::Span::weeks", reason = "panics when out of range, use `try_weeks`", allow-invalid = true },
+    { path = "jiff::Span::days", reason = "panics when out of range, use `try_days`", allow-invalid = true },
+    { path = "jiff::Span::hours", reason = "panics when out of range, use `try_hours`", allow-invalid = true },
+    { path = "jiff::Span::minutes", reason = "panics when out of range, use `try_minutes`", allow-invalid = true },
+    { path = "jiff::Span::seconds", reason = "panics when out of range, use `try_seconds`", allow-invalid = true },
+    { path = "jiff::Span::milliseconds", reason = "panics when out of range, use `try_milliseconds`", allow-invalid = true },
+    { path = "jiff::Span::microseconds", reason = "panics when out of range, use `try_microseconds`", allow-invalid = true },
+    { path = "jiff::Span::nanoseconds", reason = "panics when out of range, use `try_nanoseconds`", allow-invalid = true },
+    { path = "chrono::TimeDelta::weeks", reason = "panics when out of range, use `try_weeks`", allow-invalid = true },
+    { path = "chrono::TimeDelta::days", reason = "panics when out of range, use `try_days`", allow-invalid = true },
+    { path = "chrono::TimeDelta::hours", reason = "panics when out of range, use `try_hours`", allow-invalid = true },
+    { path = "chrono::TimeDelta::minutes", reason = "panics when out of range, use `try_minutes`", allow-invalid = true },
+    { path = "chrono::TimeDelta::seconds", reason = "panics when out of range, use `try_seconds`", allow-invalid = true },
+    { path = "chrono::TimeDelta::milliseconds", reason = "panics when out of range, use `try_milliseconds`", allow-invalid = true },
 ]

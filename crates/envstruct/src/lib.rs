@@ -2,6 +2,7 @@
 #![cfg_attr(
     not(test),
     deny(
+        clippy::disallowed_methods,
         clippy::expect_used,
         clippy::indexing_slicing,
         clippy::panic,
