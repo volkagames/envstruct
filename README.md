@@ -53,6 +53,19 @@ fn main() -> Result<(), envstruct::EnvStructError> {
 
 ```
 
+## Testing
+
+Setting process variables with `std::env::set_var` is `unsafe` since Rust 2024 and races between tests. Parse a fixed set of variables instead; nothing outside the set is read:
+
+```rust
+let config = Config::with_prefix_from_vars("MY_APP", [
+    ("MY_APP_DB_DSN", "postgres://localhost"),
+    ("MY_APP_DB_SECRET", "secret"),
+])?;
+```
+
+`Config::from_vars(...)` does the same without a prefix. To reuse one set across calls, build an `EnvVars` and call `Config::parse_from_env_vars(&vars, "MY_APP", None)`.
+
 ## Features
 
 - Nested Structures: Parse environment variables into nested Rust structures.
@@ -81,7 +94,7 @@ fn main() -> Result<(), envstruct::EnvStructError> {
 - `name`: Name of the environment variable for a field.
 - `default`: Default value if the environment variable doesn't exist.
 - `flatten`: Ignore the field name when collecting the full name of an environment variable.
-- `with`: Custom parser for a field.
+- `with`: Custom parser for a field. The type provides `parse_from_env_vars(vars: &EnvVars, var_name, default)` and `get_env_entries(prefix, default)`, see `WithJson`.
 
 ## License
 

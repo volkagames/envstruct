@@ -40,29 +40,31 @@ impl<T: for<'a> serde::de::Deserialize<'a>> WithJson<T> {
     where
         Self: Sized,
     {
-        let var_name = var_name.as_ref().to_string();
-        match std::env::var(&var_name) {
-            Ok(ref value) => Self::parse(value).map_err(|e| EnvStructError::ParseEnvError {
-                var_name,
-                var_value: value.to_owned(),
-                source: e,
-            }),
-            Err(e) => match default {
-                Some(default) => {
-                    Self::parse(default).map_err(|e| EnvStructError::ParseDefaultError {
-                        var_name,
-                        var_value: default.to_owned(),
-                        source: e,
-                    })
-                }
-                None => match e {
-                    std::env::VarError::NotPresent => Err(EnvStructError::MissingEnvVar(var_name)),
-                    std::env::VarError::NotUnicode(_) => {
-                        Err(EnvStructError::InvalidVarFormat(var_name))
-                    }
-                },
-            },
-        }
+        Self::parse_from_env_vars(&EnvVars::process(), var_name, default)
+    }
+
+    /// Parses a JSON string from a variable of `vars` into an instance of `T`.
+    ///
+    /// # Arguments
+    ///
+    /// * `vars` - The variables to read from.
+    /// * `var_name` - The name of the environment variable.
+    /// * `default` - An optional default value to use if the environment variable is not set.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(T)` if parsing is successful.
+    /// * `Err(EnvStructError)` if parsing fails or the environment variable is not set.
+    pub fn parse_from_env_vars(
+        vars: &EnvVars,
+        var_name: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<T, EnvStructError>
+    where
+        Self: Sized,
+    {
+        let var_name = var_name.as_ref();
+        parse_var(var_name, vars.var(var_name), default, Self::parse)
     }
 
     /// Retrieves environment variable entries for documentation purposes.

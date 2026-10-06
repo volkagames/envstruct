@@ -150,7 +150,7 @@ impl ToTokens for EnvStructInputReceiver {
                             }
                         } else {
                             quote_spanned! {field.ty.span() =>
-                                #field_name: #field_type::parse_from_env_var(#var_name_expr, #var_default)?.into()
+                                #field_name: #field_type::parse_from_env_vars(vars, #var_name_expr, #var_default)?.into()
                             }
                         }
 
@@ -175,6 +175,10 @@ impl ToTokens for EnvStructInputReceiver {
                     #[allow(clippy::useless_conversion)]
                     impl #imp ::envstruct::EnvParseNested for #ident #ty #where_clause {
                         fn parse_from_env_var(prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
+                            <Self as ::envstruct::EnvParseNested>::parse_from_env_vars(&::envstruct::EnvVars::process(), prefix, default)
+                        }
+
+                        fn parse_from_env_vars(vars: &::envstruct::EnvVars, prefix: impl AsRef<str>, default: Option<&str>) -> std::result::Result<Self, ::envstruct::EnvStructError> {
                             ::core::result::Result::Ok(Self {
                                 #( #field_exprs, )*
                             })

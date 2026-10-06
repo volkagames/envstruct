@@ -49,6 +49,28 @@ where
     where
         Self: Sized,
     {
+        Self::parse_from_env_vars(&EnvVars::process(), var_name, default)
+    }
+
+    /// Parses the variables of `vars` into an `EnvMap`.
+    ///
+    /// # Arguments
+    ///
+    /// * `vars` - The variables to read from.
+    /// * `var_name` - The prefix of the environment variables to parse.
+    /// * `default` - An optional default value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EnvStructError` if parsing fails.
+    fn parse_from_env_vars(
+        vars: &EnvVars,
+        var_name: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<Self, EnvStructError>
+    where
+        Self: Sized,
+    {
         let var_name = var_name.as_ref();
         // keys start after a `_` separator, so `TEST_MAPPING` is not a key of `TEST_MAP`;
         // a map at the root (empty prefix) takes every variable
@@ -58,7 +80,8 @@ where
             format!("{var_name}_")
         };
         // `vars()` panics on any non-UTF-8 name in the process, even one outside the prefix
-        let map = std::env::vars_os()
+        let map = vars
+            .vars_os()
             .filter_map(|(k, _)| match k.into_string() {
                 Ok(k) => {
                     let key = k.strip_prefix(&prefix)?.trim_start_matches('_').to_string();
@@ -78,7 +101,7 @@ where
                 Ok((
                     K::from_str(&key)
                         .map_err(|_| EnvStructError::InvalidKeyFormat(k.to_string()))?,
-                    V::parse_from_env_var(k, default)?,
+                    V::parse_from_env_vars(vars, k, default)?,
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;

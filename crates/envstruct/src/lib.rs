@@ -15,12 +15,14 @@
 
 mod env_json;
 mod env_map;
+mod env_vars;
 mod error;
 mod parse_nested;
 mod parse_primitive;
 mod usage;
 mod with_json;
 
+pub use env_vars::*;
 pub use error::*;
 pub use parse_nested::*;
 pub use parse_primitive::*;
@@ -31,8 +33,8 @@ pub use envstruct_derive::*;
 /// The `prelude` module re-exports common items for easy inclusion.
 pub mod prelude {
     pub use super::{
-        env_json::*, env_map::*, error::*, parse_nested::*, parse_primitive::*, usage::*,
-        with_json::*,
+        env_json::*, env_map::*, env_vars::*, error::*, parse_nested::*, parse_primitive::*,
+        usage::*, with_json::*,
     };
     pub use envstruct_derive::*;
 }

@@ -34,29 +34,37 @@ pub trait EnvParsePrimitive {
     where
         Self: Sized,
     {
-        let var_name = var_name.as_ref().to_string();
-        match std::env::var(&var_name) {
-            Ok(ref value) => Self::parse(value).map_err(|e| EnvStructError::ParseEnvError {
-                var_name,
-                var_value: value.to_owned(),
-                source: e,
-            }),
-            Err(e) => match default {
-                Some(default) => {
-                    Self::parse(default).map_err(|e| EnvStructError::ParseDefaultError {
-                        var_name,
-                        var_value: default.to_owned(),
-                        source: e,
-                    })
-                }
-                None => match e {
-                    std::env::VarError::NotPresent => Err(EnvStructError::MissingEnvVar(var_name)),
-                    std::env::VarError::NotUnicode(_) => {
-                        Err(EnvStructError::InvalidVarFormat(var_name))
-                    }
-                },
-            },
+        let var_name = var_name.as_ref();
+        parse_var(var_name, std::env::var(var_name), default, Self::parse)
+    }
+
+    /// Parses a variable of `vars` into the implementing type.
+    ///
+    /// The process environment is read through `parse_from_env_var`, so an
+    /// implementation that overrides only that method keeps working.
+    ///
+    /// # Arguments
+    ///
+    /// * `vars` - The variables to read from.
+    /// * `var_name` - The name of the environment variable.
+    /// * `default` - An optional default value if the environment variable is not set.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self, EnvStructError>` - The parsed value or an error.
+    fn parse_from_env_vars(
+        vars: &EnvVars,
+        var_name: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<Self, EnvStructError>
+    where
+        Self: Sized,
+    {
+        if vars.is_process() {
+            return Self::parse_from_env_var(var_name, default);
         }
+        let var_name = var_name.as_ref();
+        parse_var(var_name, vars.var(var_name), default, Self::parse)
     }
 
     /// Retrieves environment variable entries for documentation purposes.
@@ -78,6 +86,38 @@ pub trait EnvParsePrimitive {
             typ: std::any::type_name::<Self>().to_string(),
             default: default.map(|v| v.to_string()),
         }])
+    }
+}
+
+/// Parses the fetched `value` of `var_name`, falling back to `default` when the
+/// variable is not set.
+pub(crate) fn parse_var<T>(
+    var_name: &str,
+    value: Result<String, std::env::VarError>,
+    default: Option<&str>,
+    parse: impl Fn(&str) -> Result<T, BoxError>,
+) -> Result<T, EnvStructError> {
+    match value {
+        Ok(value) => parse(&value).map_err(|e| EnvStructError::ParseEnvError {
+            var_name: var_name.to_owned(),
+            var_value: value,
+            source: e,
+        }),
+        Err(e) => match default {
+            Some(default) => parse(default).map_err(|e| EnvStructError::ParseDefaultError {
+                var_name: var_name.to_owned(),
+                var_value: default.to_owned(),
+                source: e,
+            }),
+            None => match e {
+                std::env::VarError::NotPresent => {
+                    Err(EnvStructError::MissingEnvVar(var_name.to_owned()))
+                }
+                std::env::VarError::NotUnicode(_) => {
+                    Err(EnvStructError::InvalidVarFormat(var_name.to_owned()))
+                }
+            },
+        },
     }
 }
 
@@ -329,7 +369,15 @@ impl<T: EnvParsePrimitive> EnvParsePrimitive for Option<T> {
         var_name: impl AsRef<str>,
         default: Option<&str>,
     ) -> Result<Self, EnvStructError> {
-        match T::parse_from_env_var(var_name, default) {
+        Self::parse_from_env_vars(&EnvVars::process(), var_name, default)
+    }
+
+    fn parse_from_env_vars(
+        vars: &EnvVars,
+        var_name: impl AsRef<str>,
+        default: Option<&str>,
+    ) -> Result<Self, EnvStructError> {
+        match T::parse_from_env_vars(vars, var_name, default) {
             Ok(value) => Ok(Some(value)),
             Err(err) => match err {
                 EnvStructError::MissingEnvVar(_) => Ok(None),

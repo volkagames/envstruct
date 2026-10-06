@@ -782,7 +782,8 @@ fn test_with_override() {
 
     pub struct OverrideStringEnv;
     impl OverrideStringEnv {
-        fn parse_from_env_var(
+        fn parse_from_env_vars(
+            _vars: &EnvVars,
             _var_name: impl AsRef<str>,
             _default: Option<&str>,
         ) -> Result<String, EnvStructError> {
